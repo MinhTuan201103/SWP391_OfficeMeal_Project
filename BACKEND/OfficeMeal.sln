@@ -1,0 +1,33 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OfficeMeal.Web", "OfficeMeal.Web\OfficeMeal.Web.csproj", "{6F90F293-695A-4A8D-A581-0CE6F65F44F3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OfficeMeal.BLL", "OfficeMeal.BLL\OfficeMeal.BLL.csproj", "{3C9F88D8-3078-4A77-B8E9-BC229F9C46D7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OfficeMeal.DAL", "OfficeMeal.DAL\OfficeMeal.DAL.csproj", "{C6024FCA-DCB7-4DFE-A1C4-EAB80377FC18}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6F90F293-695A-4A8D-A581-0CE6F65F44F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F90F293-695A-4A8D-A581-0CE6F65F44F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F90F293-695A-4A8D-A581-0CE6F65F44F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F90F293-695A-4A8D-A581-0CE6F65F44F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C9F88D8-3078-4A77-B8E9-BC229F9C46D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C9F88D8-3078-4A77-B8E9-BC229F9C46D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C9F88D8-3078-4A77-B8E9-BC229F9C46D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C9F88D8-3078-4A77-B8E9-BC229F9C46D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6024FCA-DCB7-4DFE-A1C4-EAB80377FC18}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6024FCA-DCB7-4DFE-A1C4-EAB80377FC18}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6024FCA-DCB7-4DFE-A1C4-EAB80377FC18}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6024FCA-DCB7-4DFE-A1C4-EAB80377FC18}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
