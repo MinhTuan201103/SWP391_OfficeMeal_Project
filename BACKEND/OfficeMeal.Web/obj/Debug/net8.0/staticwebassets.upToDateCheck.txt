@@ -1,4 +1,4 @@
-wwwroot\assets\index-CvYjGp1c.js
+wwwroot\assets\index-JNrVNkxY.js
 wwwroot\assets\index-vgIJNZHh.css
 wwwroot\brand-logo.png
 wwwroot\index.html

@@ -15,8 +15,18 @@ export default function Register() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+    const payload = {
+      fullName: form.fullName.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      password: form.password.trim()
+    };
+    if (!payload.fullName || !payload.email || !payload.phone || !payload.password) {
+      setError("Vui long nhap day du thong tin.");
+      return;
+    }
     try {
-      await register(form);
+      await register(payload);
       navigate("/login");
     } catch (err) {
       setError(err?.response?.data?.message || "Dang ky that bai.");
@@ -34,18 +44,25 @@ export default function Register() {
             placeholder="Ho va ten"
             value={form.fullName}
             onChange={(e) => setForm((s) => ({ ...s, fullName: e.target.value }))}
+            required
+            minLength={2}
           />
           <input
             className="form-control mb-3"
+            type="email"
             placeholder="Email"
             value={form.email}
             onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
+            required
           />
           <input
             className="form-control mb-3"
             placeholder="So dien thoai"
             value={form.phone}
             onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))}
+            required
+            minLength={9}
+            maxLength={20}
           />
           <input
             type="password"
@@ -53,6 +70,8 @@ export default function Register() {
             placeholder="Password"
             value={form.password}
             onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))}
+            required
+            minLength={6}
           />
           {error && <div className="text-danger small mb-3">{error}</div>}
           <button className="btn btn-brand w-100 py-2 rounded-pill" type="submit">

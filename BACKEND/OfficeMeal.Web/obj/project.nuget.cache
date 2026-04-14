@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "tZD2oXjInUY=",
+  "dgSpecHash": "piTYkGUN5ik=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\BACKEND\\OfficeMeal.Web\\OfficeMeal.Web.csproj",
+  "projectFilePath": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.Web\\OfficeMeal.Web.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Admin\\.nuget\\packages\\azure.core\\1.35.0\\azure.core.1.35.0.nupkg.sha512",
     "C:\\Users\\Admin\\.nuget\\packages\\azure.identity\\1.10.3\\azure.identity.1.10.3.nupkg.sha512",

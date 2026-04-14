@@ -71,9 +71,16 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> CreateOrder([FromBody] CreateOrderViewModel model)
     {
         var customerId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
-        var created = await _orderService.CreateOrderAsync(customerId, model);
-        await _hubContext.Clients.All.SendAsync("UpdateStatus", created.OrderId, (int)created.Status);
-        return Ok(created);
+        try
+        {
+            var created = await _orderService.CreateOrderAsync(customerId, model);
+            await _hubContext.Clients.All.SendAsync("UpdateStatus", created.OrderId, (int)created.Status);
+            return Ok(created);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPatch("{orderId:int}/status")]

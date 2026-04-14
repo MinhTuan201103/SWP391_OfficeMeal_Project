@@ -133,12 +133,32 @@ export default function CustomerPanel({
                   <img src={food.imageUrl || "https://via.placeholder.com/600x320?text=OfficeMeal"} className="card-img-top" alt={food.name} />
                   <div className="card-body d-flex flex-column">
                     <h6 className="fw-semibold mb-1">{food.name}</h6>
+                    {!food.isActive && (
+                      <div className="small text-danger fw-semibold mb-1">Tam het mon</div>
+                    )}
+                    {food.description && (
+                      <div className="small text-muted mb-1">{food.description}</div>
+                    )}
                     <div className="text-warning fw-bold small">
-                      Giá: {Number(food.price).toLocaleString("vi-VN")} VND
+                      Giá: {Number(food.discountedPrice ?? food.price).toLocaleString("vi-VN")} VND
                     </div>
-                    <div className="small text-muted text-decoration-line-through mb-2">
-                      {(Number(food.price) * 1.45).toLocaleString("vi-VN")} VND
-                    </div>
+                    {Number(food.discountPercent ?? 0) > 0 && (
+                      <div className="small text-danger fw-semibold">-{Number(food.discountPercent)}%</div>
+                    )}
+                    {food.itemType === "combo" && Array.isArray(food.items) && food.items.length > 0 && (
+                      <div className="small text-muted mb-1">
+                        {food.items.map((item, idx) => (
+                          <div key={`${food.id}-combo-item-${idx}`}>
+                            {item.quantity} x {item.foodName}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {Number(food.discountPercent ?? 0) > 0 && (
+                      <div className="small text-muted text-decoration-line-through mb-2">
+                        {Number(food.price).toLocaleString("vi-VN")} VND
+                      </div>
+                    )}
                     <div className="mt-auto d-flex justify-content-end">
                       <button
                         type="button"
@@ -196,7 +216,7 @@ export default function CustomerPanel({
                         <Plus size={14} />
                       </button>
                     </div>
-                    <strong>{(item.quantity * Number(item.price)).toLocaleString("vi-VN")} d</strong>
+                    <strong>{(item.quantity * Number(item.discountedPrice ?? item.price)).toLocaleString("vi-VN")} d</strong>
                   </div>
                 </div>
               ))}

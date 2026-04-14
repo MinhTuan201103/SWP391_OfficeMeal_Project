@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("OfficeMeal.Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b2e882a2732c7eafde2b83dca95e231c1e21e963")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3ff81b742fc25864f252aecdf77d7c736994bf8e")]
 [assembly: System.Reflection.AssemblyProductAttribute("OfficeMeal.Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("OfficeMeal.Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

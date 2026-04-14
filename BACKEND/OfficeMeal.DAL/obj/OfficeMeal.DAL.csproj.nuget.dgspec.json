@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\BACKEND\\OfficeMeal.DAL\\OfficeMeal.DAL.csproj": {}
+    "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.DAL\\OfficeMeal.DAL.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\BACKEND\\OfficeMeal.DAL\\OfficeMeal.DAL.csproj": {
+    "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.DAL\\OfficeMeal.DAL.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\BACKEND\\OfficeMeal.DAL\\OfficeMeal.DAL.csproj",
+        "projectUniqueName": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.DAL\\OfficeMeal.DAL.csproj",
         "projectName": "OfficeMeal.DAL",
-        "projectPath": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\BACKEND\\OfficeMeal.DAL\\OfficeMeal.DAL.csproj",
+        "projectPath": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.DAL\\OfficeMeal.DAL.csproj",
         "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\BACKEND\\OfficeMeal.DAL\\obj\\",
+        "outputPath": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.DAL\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

@@ -35,6 +35,8 @@ public class AuthApiController : ControllerBase
         {
             return BadRequest(ModelState);
         }
+        model.Email = model.Email.Trim();
+        model.Password = model.Password.Trim();
 
         var user = await _authService.LoginAsync(model);
         if (user is null || user.Role is null)
@@ -70,6 +72,10 @@ public class AuthApiController : ControllerBase
         {
             return BadRequest(ModelState);
         }
+        model.FullName = model.FullName.Trim();
+        model.Email = model.Email.Trim();
+        model.Phone = model.Phone.Trim();
+        model.Password = model.Password.Trim();
 
         try
         {
@@ -116,6 +122,10 @@ public class AuthApiController : ControllerBase
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public async Task<IActionResult> UpdateMe([FromBody] UpdateProfileViewModel model)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
         var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId);
         if (user is null)

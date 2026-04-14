@@ -82,9 +82,11 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateUser([FromBody] AdminCreateUserViewModel model)
     {
+        var email = model.Email.Trim().ToLowerInvariant();
+        var fullName = model.FullName.Trim();
         string password = string.IsNullOrWhiteSpace(model.Password) ? "123" : model.Password;
 
-        if (await _dbContext.Users.AnyAsync(x => x.Email == model.Email))
+        if (await _dbContext.Users.AnyAsync(x => x.Email.ToLower() == email))
         {
             return BadRequest(new { message = "Email already exists." });
         }
@@ -100,11 +102,11 @@ public class UsersController : ControllerBase
 
         var user = new DAL.Models.User
         {
-            FullName = model.FullName,
-            Email = model.Email,
+            FullName = fullName,
+            Email = email,
             Password = password,
-            Phone = model.Phone,
-            Address = model.Address,
+            Phone = string.IsNullOrWhiteSpace(model.Phone) ? null : model.Phone.Trim(),
+            Address = string.IsNullOrWhiteSpace(model.Address) ? null : model.Address.Trim(),
             RoleId = model.RoleId,
             IsActive = true,
             CreatedAt = DateTime.Now
@@ -137,9 +139,9 @@ public class UsersController : ControllerBase
             return BadRequest(new { message = "Cannot assign Admin role in this screen." });
         }
 
-        user.FullName = model.FullName;
-        user.Phone = model.Phone;
-        user.Address = model.Address;
+        user.FullName = model.FullName.Trim();
+        user.Phone = string.IsNullOrWhiteSpace(model.Phone) ? null : model.Phone.Trim();
+        user.Address = string.IsNullOrWhiteSpace(model.Address) ? null : model.Address.Trim();
         user.RoleId = model.RoleId;
         user.IsActive = model.IsActive;
         await _dbContext.SaveChangesAsync();

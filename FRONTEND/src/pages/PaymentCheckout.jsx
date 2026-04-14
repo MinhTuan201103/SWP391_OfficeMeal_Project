@@ -20,11 +20,11 @@ export default function PaymentCheckout() {
 
   const orderId = Number(searchParams.get("orderId") || 0);
   const providerRaw = String(searchParams.get("provider") || "momo").toLowerCase();
-  const provider = providerRaw === "zalopay" ? "ZaloPay" : "MoMo";
+  const provider = providerRaw === "zalopay" ? "ZaloPay" : providerRaw === "vnpay" ? "VNPay" : "MoMo";
   const amount = Number(searchParams.get("amount") || 0);
 
   if (user === null) return <Navigate to="/login" replace />;
-  if (!orderId) return <Navigate to="/" replace />;
+  if (!orderId || amount <= 0) return <Navigate to="/" replace />;
 
   const handleConfirmPaid = async () => {
     setError("");

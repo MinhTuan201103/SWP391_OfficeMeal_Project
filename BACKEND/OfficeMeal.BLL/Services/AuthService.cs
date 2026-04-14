@@ -27,6 +27,10 @@ public class AuthService : IAuthService
         {
             return null;
         }
+        if (!user.IsActive)
+        {
+            return null;
+        }
 
         var isValidPassword = user.Password == hashedPassword || user.Password == model.Password;
         return isValidPassword ? user : null;
@@ -46,10 +50,10 @@ public class AuthService : IAuthService
 
         var user = new User
         {
-            FullName = model.FullName,
+            FullName = model.FullName.Trim(),
             Email = model.Email.Trim(),
             Password = HashPassword(model.Password),
-            Phone = model.Phone,
+            Phone = model.Phone.Trim(),
             RoleId = role.Id,
             CreatedAt = DateTime.Now,
             IsActive = true

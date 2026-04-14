@@ -39,9 +39,18 @@ export default function Profile() {
     event.preventDefault();
     setError("");
     setMessage("");
+    const payload = {
+      fullName: form.fullName.trim(),
+      phone: form.phone.trim(),
+      address: form.address.trim()
+    };
+    if (!payload.fullName) {
+      setError("Ho ten khong duoc de trong.");
+      return;
+    }
     setSaving(true);
     try {
-      const updated = await updateProfile(form);
+      const updated = await updateProfile(payload);
       setUser(updated);
       setForm({
         fullName: updated?.fullName ?? updated?.FullName ?? "",
@@ -103,6 +112,7 @@ export default function Profile() {
                   className="form-control"
                   value={form.phone}
                   onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))}
+                  maxLength={20}
                 />
               </div>
               <div className="col-12">
@@ -116,6 +126,7 @@ export default function Profile() {
                   rows={3}
                   value={form.address}
                   onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))}
+                  maxLength={250}
                 />
               </div>
             </div>

@@ -16,6 +16,16 @@ public class OrderService : IOrderService
 
     public async Task<OrderResponseViewModel> CreateOrderAsync(int customerId, CreateOrderViewModel model)
     {
+        var allowedPayments = new[] { "cash", "momo", "zalopay", "vnpay" };
+        var paymentMethod = (model.PaymentMethod ?? string.Empty).Trim();
+        if (!allowedPayments.Contains(paymentMethod.ToLowerInvariant()))
+        {
+            throw new InvalidOperationException("Unsupported payment method.");
+        }
+        if (string.IsNullOrWhiteSpace(model.DeliveryAddress))
+        {
+            throw new InvalidOperationException("Delivery address is required.");
+        }
         if (model.Items.Count == 0)
         {
             throw new InvalidOperationException("Order items cannot be empty.");
@@ -25,7 +35,11 @@ public class OrderService : IOrderService
         var comboIds = model.Items.Where(x => x.ComboId.HasValue).Select(x => x.ComboId!.Value).Distinct().ToList();
 
         var foods = await _dbContext.Foods.Where(x => foodIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id);
-        var combos = await _dbContext.Combos.Where(x => comboIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id);
+        var combos = await _dbContext.Combos
+            .Include(x => x.ComboDetails)
+                .ThenInclude(x => x.Food)
+            .Where(x => comboIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id);
 
         var details = new List<OrderDetail>();
         decimal total = 0;
@@ -35,15 +49,28 @@ public class OrderService : IOrderService
             {
                 continue;
             }
+            if (item.FoodId.HasValue && item.ComboId.HasValue)
+            {
+                continue;
+            }
 
             decimal unitPrice = 0;
             if (item.FoodId.HasValue && foods.TryGetValue(item.FoodId.Value, out var food))
             {
-                unitPrice = food.Price;
+                if (!food.IsActive)
+                {
+                    continue;
+                }
+                unitPrice = Math.Round(food.Price * (100 - food.DiscountPercent) / 100m, 2);
             }
             else if (item.ComboId.HasValue && combos.TryGetValue(item.ComboId.Value, out var combo))
             {
-                unitPrice = combo.Price;
+                var comboSellable = combo.IsActive && combo.ComboDetails.All(x => x.Food != null && x.Food.IsActive);
+                if (!comboSellable)
+                {
+                    continue;
+                }
+                unitPrice = Math.Round(combo.Price * (100 - combo.DiscountPercent) / 100m, 2);
             }
             else
             {
@@ -61,14 +88,19 @@ public class OrderService : IOrderService
             total += unitPrice * item.Quantity;
         }
 
+        if (details.Count == 0)
+        {
+            throw new InvalidOperationException("Order has no valid items.");
+        }
+
         var order = new Order
         {
             CustomerId = customerId,
             OrderDate = DateTime.Now,
             TotalAmount = total,
-            PaymentMethod = model.PaymentMethod,
-            DeliveryAddress = model.DeliveryAddress,
-            Note = model.Note,
+            PaymentMethod = paymentMethod,
+            DeliveryAddress = model.DeliveryAddress.Trim(),
+            Note = string.IsNullOrWhiteSpace(model.Note) ? null : model.Note.Trim(),
             Status = OrderStatus.Pending,
             OrderDetails = details
         };
@@ -134,6 +166,8 @@ public class OrderService : IOrderService
                 .ThenInclude(x => x.Food)
             .Include(x => x.OrderDetails)
                 .ThenInclude(x => x.Combo)
+                    .ThenInclude(x => x!.ComboDetails)
+                        .ThenInclude(x => x.Food)
             .Select(order => new OrderResponseViewModel
             {
                 OrderId = order.Id,
@@ -156,7 +190,15 @@ public class OrderService : IOrderService
                     UnitPrice = detail.UnitPrice,
                     ItemName = detail.Food != null
                         ? detail.Food.Name
-                        : (detail.Combo != null ? detail.Combo.Name : "Unknown")
+                        : (detail.Combo != null ? detail.Combo.Name : "Unknown"),
+                    ComboComponents = detail.Combo != null
+                        ? detail.Combo.ComboDetails.Select(component => new ComboComponentViewModel
+                        {
+                            FoodId = component.FoodId,
+                            FoodName = component.Food != null ? component.Food.Name : string.Empty,
+                            Quantity = component.Quantity
+                        }).ToList()
+                        : new List<ComboComponentViewModel>()
                 }).ToList()
             });
     }

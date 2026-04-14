@@ -1,17 +1,29 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\BACKEND\\",
+  "WorkspaceRootPath": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{6F90F293-695A-4A8D-A581-0CE6F65F44F3}|OfficeMeal.Web\\OfficeMeal.Web.csproj|c:\\users\\admin\\onedrive\\documents\\swp391_officemeal\\backend\\officemeal.web\\controllers\\dailymenuscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{6F90F293-695A-4A8D-A581-0CE6F65F44F3}|OfficeMeal.Web\\OfficeMeal.Web.csproj|c:\\users\\admin\\onedrive\\documents\\swp391_officemeal\\swp391_officemeal_project\\backend\\officemeal.web\\controllers\\authapicontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6F90F293-695A-4A8D-A581-0CE6F65F44F3}|OfficeMeal.Web\\OfficeMeal.Web.csproj|solutionrelative:officemeal.web\\controllers\\authapicontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6F90F293-695A-4A8D-A581-0CE6F65F44F3}|OfficeMeal.Web\\OfficeMeal.Web.csproj|c:\\users\\admin\\onedrive\\documents\\swp391_officemeal\\swp391_officemeal_project\\backend\\officemeal.web\\controllers\\comboscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6F90F293-695A-4A8D-A581-0CE6F65F44F3}|OfficeMeal.Web\\OfficeMeal.Web.csproj|solutionrelative:officemeal.web\\controllers\\comboscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6F90F293-695A-4A8D-A581-0CE6F65F44F3}|OfficeMeal.Web\\OfficeMeal.Web.csproj|c:\\users\\admin\\onedrive\\documents\\swp391_officemeal\\swp391_officemeal_project\\backend\\officemeal.web\\controllers\\dailymenuscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{6F90F293-695A-4A8D-A581-0CE6F65F44F3}|OfficeMeal.Web\\OfficeMeal.Web.csproj|solutionrelative:officemeal.web\\controllers\\dailymenuscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{6F90F293-695A-4A8D-A581-0CE6F65F44F3}|OfficeMeal.Web\\OfficeMeal.Web.csproj|c:\\users\\admin\\onedrive\\documents\\swp391_officemeal\\backend\\officemeal.web\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{6F90F293-695A-4A8D-A581-0CE6F65F44F3}|OfficeMeal.Web\\OfficeMeal.Web.csproj|c:\\users\\admin\\onedrive\\documents\\swp391_officemeal\\swp391_officemeal_project\\backend\\officemeal.web\\controllers\\dailymenucontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6F90F293-695A-4A8D-A581-0CE6F65F44F3}|OfficeMeal.Web\\OfficeMeal.Web.csproj|solutionrelative:officemeal.web\\controllers\\dailymenucontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6F90F293-695A-4A8D-A581-0CE6F65F44F3}|OfficeMeal.Web\\OfficeMeal.Web.csproj|c:\\users\\admin\\onedrive\\documents\\swp391_officemeal\\swp391_officemeal_project\\backend\\officemeal.web\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{6F90F293-695A-4A8D-A581-0CE6F65F44F3}|OfficeMeal.Web\\OfficeMeal.Web.csproj|solutionrelative:officemeal.web\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{6F90F293-695A-4A8D-A581-0CE6F65F44F3}|OfficeMeal.Web\\OfficeMeal.Web.csproj|c:\\users\\admin\\onedrive\\documents\\swp391_officemeal\\backend\\officemeal.web\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "AbsoluteMoniker": "D:0:0:{6F90F293-695A-4A8D-A581-0CE6F65F44F3}|OfficeMeal.Web\\OfficeMeal.Web.csproj|c:\\users\\admin\\onedrive\\documents\\swp391_officemeal\\swp391_officemeal_project\\backend\\officemeal.web\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
       "RelativeMoniker": "D:0:0:{6F90F293-695A-4A8D-A581-0CE6F65F44F3}|OfficeMeal.Web\\OfficeMeal.Web.csproj|solutionrelative:officemeal.web\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     }
   ],
@@ -71,23 +83,62 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "AuthApiController.cs",
+              "DocumentMoniker": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.Web\\Controllers\\AuthApiController.cs",
+              "RelativeDocumentMoniker": "OfficeMeal.Web\\Controllers\\AuthApiController.cs",
+              "ToolTip": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.Web\\Controllers\\AuthApiController.cs",
+              "RelativeToolTip": "OfficeMeal.Web\\Controllers\\AuthApiController.cs",
+              "ViewState": "AgIAAJ0AAAAAAAAAAAAwwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-14T15:08:17.38Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CombosController.cs",
+              "DocumentMoniker": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.Web\\Controllers\\CombosController.cs",
+              "RelativeDocumentMoniker": "OfficeMeal.Web\\Controllers\\CombosController.cs",
+              "ToolTip": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.Web\\Controllers\\CombosController.cs",
+              "RelativeToolTip": "OfficeMeal.Web\\Controllers\\CombosController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-14T15:08:16.464Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "DailyMenuController.cs",
+              "DocumentMoniker": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.Web\\Controllers\\DailyMenuController.cs",
+              "RelativeDocumentMoniker": "OfficeMeal.Web\\Controllers\\DailyMenuController.cs",
+              "ToolTip": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.Web\\Controllers\\DailyMenuController.cs",
+              "RelativeToolTip": "OfficeMeal.Web\\Controllers\\DailyMenuController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-14T15:08:07.425Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "DailyMenusController.cs",
-              "DocumentMoniker": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\BACKEND\\OfficeMeal.Web\\Controllers\\DailyMenusController.cs",
+              "DocumentMoniker": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.Web\\Controllers\\DailyMenusController.cs",
               "RelativeDocumentMoniker": "OfficeMeal.Web\\Controllers\\DailyMenusController.cs",
-              "ToolTip": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\BACKEND\\OfficeMeal.Web\\Controllers\\DailyMenusController.cs",
+              "ToolTip": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.Web\\Controllers\\DailyMenusController.cs",
               "RelativeToolTip": "OfficeMeal.Web\\Controllers\\DailyMenusController.cs",
-              "ViewState": "AgIAABgAAAAAAAAAAAAYwCIAAABHAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAC0AAABHAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-04-13T15:52:41.886Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 4,
               "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\BACKEND\\OfficeMeal.Web\\Program.cs",
+              "DocumentMoniker": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.Web\\Program.cs",
               "RelativeDocumentMoniker": "OfficeMeal.Web\\Program.cs",
-              "ToolTip": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\BACKEND\\OfficeMeal.Web\\Program.cs",
+              "ToolTip": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.Web\\Program.cs",
               "RelativeToolTip": "OfficeMeal.Web\\Program.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
@@ -95,11 +146,11 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 5,
               "Title": "appsettings.json",
-              "DocumentMoniker": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\BACKEND\\OfficeMeal.Web\\appsettings.json",
+              "DocumentMoniker": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.Web\\appsettings.json",
               "RelativeDocumentMoniker": "OfficeMeal.Web\\appsettings.json",
-              "ToolTip": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\BACKEND\\OfficeMeal.Web\\appsettings.json",
+              "ToolTip": "C:\\Users\\Admin\\OneDrive\\Documents\\SWP391_OfficeMeal\\SWP391_OfficeMeal_Project\\BACKEND\\OfficeMeal.Web\\appsettings.json",
               "RelativeToolTip": "OfficeMeal.Web\\appsettings.json",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",

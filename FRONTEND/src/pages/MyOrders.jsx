@@ -11,6 +11,8 @@ import {
   getOrderStatus
 } from "../constants/orders";
 
+const getUserRole = (user) => String(user?.role ?? user?.Role ?? "").toLowerCase();
+
 export default function MyOrders() {
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -54,14 +56,14 @@ export default function MyOrders() {
 
   useEffect(() => {
     if (!user) return;
-    const r = user.role?.toLowerCase?.() ?? "";
+    const r = getUserRole(user);
     if (r !== "customer") return;
     void loadOrders();
   }, [user, loadOrders]);
 
   useEffect(() => {
     if (!user) return undefined;
-    const r = user.role?.toLowerCase?.() ?? "";
+    const r = getUserRole(user);
     if (r !== "customer") return undefined;
 
     const connection = createOrderHubConnection((orderId, status) => {
@@ -116,7 +118,7 @@ export default function MyOrders() {
     return <Navigate to="/login" replace />;
   }
 
-  const r = user.role?.toLowerCase?.() ?? "";
+  const r = getUserRole(user);
   if (r !== "customer") {
     return <Navigate to="/" replace />;
   }

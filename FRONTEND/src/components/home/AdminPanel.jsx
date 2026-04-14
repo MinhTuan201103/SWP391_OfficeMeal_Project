@@ -16,8 +16,18 @@ import {
 } from "../../services/adminService";
 
 const emptyUser = { fullName: "", email: "", phone: "", address: "", roleId: "" };
-const emptyFood = { name: "", categoryId: "", price: "", description: "", imageUrl: "" };
-const emptyCombo = { name: "", price: "", description: "", imageUrl: "" };
+const emptyFood = { name: "", categoryId: "", price: "", discountPercent: 0, description: "", imageUrl: "" };
+const emptyCombo = { name: "", price: "", discountPercent: 0, description: "", imageUrl: "", isActive: true, comboDetails: [{ foodId: "", quantity: 1 }] };
+const normalizeComboDetails = (combo) => {
+  const raw = combo?.items ?? combo?.Items ?? combo?.comboDetails ?? combo?.ComboDetails ?? [];
+  const next = (Array.isArray(raw) ? raw : [])
+    .map((x) => ({
+      foodId: String(x.foodId ?? x.FoodId ?? ""),
+      quantity: Number(x.quantity ?? x.Quantity ?? 1)
+    }))
+    .filter((x) => Number(x.foodId) > 0 && Number(x.quantity) > 0);
+  return next.length ? next : [{ foodId: "", quantity: 1 }];
+};
 
 export default function AdminPanel() {
   const [users, setUsers] = useState([]);
@@ -37,6 +47,7 @@ export default function AdminPanel() {
   const [editingFood, setEditingFood] = useState(emptyFood);
   const [editingCombo, setEditingCombo] = useState(emptyCombo);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [comboError, setComboError] = useState("");
 
   const categoryOptions = useMemo(() => {
     const map = new Map();
@@ -81,6 +92,7 @@ export default function AdminPanel() {
       name: foodForm.name,
       categoryId: Number(foodForm.categoryId),
       price: Number(foodForm.price || 0),
+      discountPercent: Number(foodForm.discountPercent || 0),
       description: foodForm.description,
       imageUrl: foodForm.imageUrl || null,
       isActive: true
@@ -92,17 +104,30 @@ export default function AdminPanel() {
 
   const onCreateCombo = async (e) => {
     e.preventDefault();
-    await createCombo({
-      name: comboForm.name,
-      price: Number(comboForm.price || 0),
-      description: comboForm.description,
-      imageUrl: comboForm.imageUrl || null,
-      isActive: true,
-      comboDetails: []
-    });
-    setComboForm(emptyCombo);
-    setShowCreateCombo(false);
-    await reload();
+    setComboError("");
+    const comboDetails = comboForm.comboDetails
+      .map((x) => ({ foodId: Number(x.foodId), quantity: Number(x.quantity) }))
+      .filter((x) => x.foodId > 0 && x.quantity > 0);
+    if (!comboDetails.length) {
+      setComboError("Vui long chon it nhat 1 mon food cho combo.");
+      return;
+    }
+    try {
+      await createCombo({
+        name: comboForm.name,
+        price: Number(comboForm.price || 0),
+        discountPercent: Number(comboForm.discountPercent || 0),
+        description: comboForm.description,
+        imageUrl: comboForm.imageUrl || null,
+        isActive: true,
+        comboDetails
+      });
+      setComboForm(emptyCombo);
+      setShowCreateCombo(false);
+      await reload();
+    } catch (error) {
+      setComboError(error?.response?.data?.message || "Tao combo that bai.");
+    }
   };
 
   const onSaveUser = async () => {
@@ -124,6 +149,7 @@ export default function AdminPanel() {
     await updateFood(editingFood.id, {
       name: editingFood.name,
       price: Number(editingFood.price),
+      discountPercent: Number(editingFood.discountPercent || 0),
       description: editingFood.description,
       categoryId: Number(editingFood.categoryId),
       imageUrl: editingFood.imageUrl ?? null,
@@ -136,25 +162,47 @@ export default function AdminPanel() {
 
   const onSaveCombo = async () => {
     if (!editingCombo?.id) return;
-    await updateCombo(editingCombo.id, {
-      name: editingCombo.name,
-      price: Number(editingCombo.price),
-      description: editingCombo.description,
-      imageUrl: editingCombo.imageUrl ?? null,
-      isActive: Boolean(editingCombo.isActive)
-    });
-    setShowEditCombo(false);
-    setEditingCombo(emptyCombo);
-    await reload();
+    setComboError("");
+    const comboDetails = (editingCombo.comboDetails ?? [])
+      .map((x) => ({ foodId: Number(x.foodId), quantity: Number(x.quantity) }))
+      .filter((x) => x.foodId > 0 && x.quantity > 0);
+    if (!comboDetails.length) {
+      setComboError("Combo phai co it nhat 1 mon food.");
+      return;
+    }
+    try {
+      await updateCombo(editingCombo.id, {
+        name: editingCombo.name,
+        price: Number(editingCombo.price),
+        discountPercent: Number(editingCombo.discountPercent || 0),
+        description: editingCombo.description,
+        imageUrl: editingCombo.imageUrl ?? null,
+        isActive: Boolean(editingCombo.isActive),
+        comboDetails
+      });
+      setShowEditCombo(false);
+      setEditingCombo(emptyCombo);
+      await reload();
+    } catch (error) {
+      setComboError(error?.response?.data?.message || "Cap nhat combo that bai.");
+    }
   };
 
   const onConfirmDelete = async () => {
     if (!deleteConfirm) return;
-    if (deleteConfirm.type === "user") await deleteUser(deleteConfirm.id);
-    if (deleteConfirm.type === "food") await deleteFood(deleteConfirm.id);
-    if (deleteConfirm.type === "combo") await deleteCombo(deleteConfirm.id);
-    setDeleteConfirm(null);
-    await reload();
+    try {
+      if (deleteConfirm.type === "user") await deleteUser(deleteConfirm.id);
+      if (deleteConfirm.type === "food") await deleteFood(deleteConfirm.id);
+      if (deleteConfirm.type === "combo") await deleteCombo(deleteConfirm.id);
+      setDeleteConfirm(null);
+      await reload();
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.title ||
+        "Khong the xoa du lieu nay do dang co lien ket.";
+      alert(message);
+    }
   };
 
   return (
@@ -214,13 +262,14 @@ export default function AdminPanel() {
             <form className="row g-2" onSubmit={onCreateFood}>
               <div className="col-md-4"><input className="form-control" placeholder="Ten mon" value={foodForm.name} onChange={(e) => setFoodForm((s) => ({ ...s, name: e.target.value }))} required /></div>
               <div className="col-md-2"><input className="form-control" placeholder="Gia" type="number" value={foodForm.price} onChange={(e) => setFoodForm((s) => ({ ...s, price: e.target.value }))} required /></div>
-              <div className="col-md-3">
+              <div className="col-md-2"><input className="form-control" placeholder="Giam (%)" type="number" min={0} max={99} value={foodForm.discountPercent} onChange={(e) => setFoodForm((s) => ({ ...s, discountPercent: e.target.value }))} /></div>
+              <div className="col-md-2">
                 <select className="form-select" value={foodForm.categoryId} onChange={(e) => setFoodForm((s) => ({ ...s, categoryId: e.target.value }))} required>
                   <option value="">Category</option>
                   {categoryOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
-              <div className="col-md-3"><input className="form-control" placeholder="Image URL" value={foodForm.imageUrl} onChange={(e) => setFoodForm((s) => ({ ...s, imageUrl: e.target.value }))} /></div>
+              <div className="col-md-4"><input className="form-control" placeholder="Image URL" value={foodForm.imageUrl} onChange={(e) => setFoodForm((s) => ({ ...s, imageUrl: e.target.value }))} /></div>
               <div className="col-12"><input className="form-control" placeholder="Mo ta" value={foodForm.description} onChange={(e) => setFoodForm((s) => ({ ...s, description: e.target.value }))} /></div>
               <div className="col-12 d-flex justify-content-end gap-2 mt-3">
                 <button type="button" className="btn btn-outline-secondary" onClick={() => setShowCreateFood(false)}>Huy</button>
@@ -238,13 +287,14 @@ export default function AdminPanel() {
             <form className="row g-2" onSubmit={(e) => { e.preventDefault(); void onSaveFood(); }}>
               <div className="col-md-4"><input className="form-control" placeholder="Tên Món" value={editingFood.name || ""} onChange={(e) => setEditingFood((s) => ({ ...s, name: e.target.value }))} required /></div>
               <div className="col-md-2"><input className="form-control" placeholder="Giá" type="number" value={editingFood.price || ""} onChange={(e) => setEditingFood((s) => ({ ...s, price: e.target.value }))} required /></div>
-              <div className="col-md-3">
+              <div className="col-md-2"><input className="form-control" placeholder="Giam (%)" type="number" min={0} max={99} value={editingFood.discountPercent ?? 0} onChange={(e) => setEditingFood((s) => ({ ...s, discountPercent: e.target.value }))} /></div>
+              <div className="col-md-2">
                 <select className="form-select" value={editingFood.categoryId || ""} onChange={(e) => setEditingFood((s) => ({ ...s, categoryId: e.target.value }))} required>
                   <option value="">Category</option>
                   {categoryOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
-              <div className="col-md-3"><input className="form-control" placeholder="Image URL" value={editingFood.imageUrl || ""} onChange={(e) => setEditingFood((s) => ({ ...s, imageUrl: e.target.value }))} /></div>
+              <div className="col-md-4"><input className="form-control" placeholder="Image URL" value={editingFood.imageUrl || ""} onChange={(e) => setEditingFood((s) => ({ ...s, imageUrl: e.target.value }))} /></div>
               <div className="col-12"><textarea className="form-control" rows={3} placeholder="Mô Tả" value={editingFood.description || ""} onChange={(e) => setEditingFood((s) => ({ ...s, description: e.target.value }))} /></div>
               <div className="col-12 d-flex justify-content-end gap-2 mt-3">
                 <button type="button" className="btn btn-outline-secondary" onClick={() => setShowEditFood(false)}>Hủy</button>
@@ -262,8 +312,78 @@ export default function AdminPanel() {
             <form className="row g-2" onSubmit={onCreateCombo}>
               <div className="col-md-5"><input className="form-control" placeholder="Ten combo" value={comboForm.name} onChange={(e) => setComboForm((s) => ({ ...s, name: e.target.value }))} required /></div>
               <div className="col-md-3"><input className="form-control" placeholder="Gia" type="number" value={comboForm.price} onChange={(e) => setComboForm((s) => ({ ...s, price: e.target.value }))} required /></div>
-              <div className="col-md-4"><input className="form-control" placeholder="Image URL" value={comboForm.imageUrl} onChange={(e) => setComboForm((s) => ({ ...s, imageUrl: e.target.value }))} /></div>
+              <div className="col-md-2"><input className="form-control" placeholder="Giam (%)" type="number" min={0} max={99} value={comboForm.discountPercent} onChange={(e) => setComboForm((s) => ({ ...s, discountPercent: e.target.value }))} /></div>
+              <div className="col-md-2"><input className="form-control" placeholder="Image URL" value={comboForm.imageUrl} onChange={(e) => setComboForm((s) => ({ ...s, imageUrl: e.target.value }))} /></div>
               <div className="col-12"><input className="form-control" placeholder="Mo ta" value={comboForm.description} onChange={(e) => setComboForm((s) => ({ ...s, description: e.target.value }))} /></div>
+              {comboError && <div className="col-12 text-danger small">{comboError}</div>}
+              <div className="col-12">
+                <div className="fw-semibold small mb-2">Mon trong combo</div>
+                <div className="d-flex flex-column gap-2">
+                  {(comboForm.comboDetails ?? []).map((line, idx) => (
+                    <div key={`new-combo-line-${idx}`} className="row g-2 align-items-center">
+                      <div className="col-md-7">
+                        <select
+                          className="form-select"
+                          value={line.foodId}
+                          onChange={(e) =>
+                            setComboForm((s) => {
+                              const next = [...(s.comboDetails ?? [])];
+                              next[idx] = { ...next[idx], foodId: e.target.value };
+                              return { ...s, comboDetails: next };
+                            })
+                          }
+                        >
+                          <option value="">Chon mon</option>
+                          {foods.map((f) => (
+                            <option key={f.id} value={f.id}>{f.name}{f.isActive ? "" : " (Tam het)"}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-md-3">
+                        <input
+                          type="number"
+                          min={1}
+                          className="form-control"
+                          value={line.quantity}
+                          onChange={(e) =>
+                            setComboForm((s) => {
+                              const next = [...(s.comboDetails ?? [])];
+                              next[idx] = { ...next[idx], quantity: e.target.value };
+                              return { ...s, comboDetails: next };
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="col-md-2 d-grid">
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger"
+                          onClick={() =>
+                            setComboForm((s) => {
+                              const next = (s.comboDetails ?? []).filter((_, i) => i !== idx);
+                              return { ...s, comboDetails: next.length ? next : [{ foodId: "", quantity: 1 }] };
+                            })
+                          }
+                        >
+                          Xoa
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary mt-2"
+                  onClick={() =>
+                    setComboForm((s) => ({
+                      ...s,
+                      comboDetails: [...(s.comboDetails ?? []), { foodId: "", quantity: 1 }]
+                    }))
+                  }
+                >
+                  + Them mon
+                </button>
+              </div>
               <div className="col-12 d-flex justify-content-end gap-2 mt-3">
                 <button type="button" className="btn btn-outline-secondary" onClick={() => setShowCreateCombo(false)}>Huy</button>
                 <button className="btn btn-brand" type="submit">Tao combo</button>
@@ -280,8 +400,90 @@ export default function AdminPanel() {
             <form className="row g-2" onSubmit={(e) => { e.preventDefault(); void onSaveCombo(); }}>
               <div className="col-md-5"><input className="form-control" placeholder="Tên Combo" value={editingCombo.name || ""} onChange={(e) => setEditingCombo((s) => ({ ...s, name: e.target.value }))} required /></div>
               <div className="col-md-3"><input className="form-control" placeholder="Giá" type="number" value={editingCombo.price || ""} onChange={(e) => setEditingCombo((s) => ({ ...s, price: e.target.value }))} required /></div>
-              <div className="col-md-4"><input className="form-control" placeholder="Image URL" value={editingCombo.imageUrl || ""} onChange={(e) => setEditingCombo((s) => ({ ...s, imageUrl: e.target.value }))} /></div>
+              <div className="col-md-2"><input className="form-control" placeholder="Giam (%)" type="number" min={0} max={99} value={editingCombo.discountPercent ?? 0} onChange={(e) => setEditingCombo((s) => ({ ...s, discountPercent: e.target.value }))} /></div>
+              <div className="col-md-2"><input className="form-control" placeholder="Image URL" value={editingCombo.imageUrl || ""} onChange={(e) => setEditingCombo((s) => ({ ...s, imageUrl: e.target.value }))} /></div>
               <div className="col-12"><textarea className="form-control" rows={3} placeholder="Mô Tả" value={editingCombo.description || ""} onChange={(e) => setEditingCombo((s) => ({ ...s, description: e.target.value }))} /></div>
+              {comboError && <div className="col-12 text-danger small">{comboError}</div>}
+              <div className="col-12">
+                <div className="fw-semibold small mb-2">Mon trong combo</div>
+                <div className="d-flex flex-column gap-2">
+                  {(editingCombo.comboDetails ?? []).map((line, idx) => (
+                    <div key={`edit-combo-line-${idx}`} className="row g-2 align-items-center">
+                      <div className="col-md-7">
+                        <select
+                          className="form-select"
+                          value={line.foodId}
+                          onChange={(e) =>
+                            setEditingCombo((s) => {
+                              const next = [...(s.comboDetails ?? [])];
+                              next[idx] = { ...next[idx], foodId: e.target.value };
+                              return { ...s, comboDetails: next };
+                            })
+                          }
+                        >
+                          <option value="">Chon mon</option>
+                          {foods.map((f) => (
+                            <option key={f.id} value={f.id}>{f.name}{f.isActive ? "" : " (Tam het)"}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-md-3">
+                        <input
+                          type="number"
+                          min={1}
+                          className="form-control"
+                          value={line.quantity}
+                          onChange={(e) =>
+                            setEditingCombo((s) => {
+                              const next = [...(s.comboDetails ?? [])];
+                              next[idx] = { ...next[idx], quantity: e.target.value };
+                              return { ...s, comboDetails: next };
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="col-md-2 d-grid">
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger"
+                          onClick={() =>
+                            setEditingCombo((s) => {
+                              const next = (s.comboDetails ?? []).filter((_, i) => i !== idx);
+                              return { ...s, comboDetails: next.length ? next : [{ foodId: "", quantity: 1 }] };
+                            })
+                          }
+                        >
+                          Xoa
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary mt-2"
+                  onClick={() =>
+                    setEditingCombo((s) => ({
+                      ...s,
+                      comboDetails: [...(s.comboDetails ?? []), { foodId: "", quantity: 1 }]
+                    }))
+                  }
+                >
+                  + Them mon
+                </button>
+              </div>
+              <div className="col-12">
+                <div className="form-check">
+                  <input
+                    id="editComboActive"
+                    type="checkbox"
+                    className="form-check-input"
+                    checked={Boolean(editingCombo.isActive)}
+                    onChange={(e) => setEditingCombo((s) => ({ ...s, isActive: e.target.checked }))}
+                  />
+                  <label className="form-check-label" htmlFor="editComboActive">Dang hoat dong (customer co the dat)</label>
+                </div>
+              </div>
               <div className="col-12 d-flex justify-content-end gap-2 mt-3">
                 <button type="button" className="btn btn-outline-secondary" onClick={() => setShowEditCombo(false)}>Hủy</button>
                 <button className="btn btn-brand" type="submit">Lưu</button>
@@ -358,13 +560,15 @@ export default function AdminPanel() {
         </div>
         <div className="table-responsive">
           <table className="table table-sm align-middle">
-            <thead><tr><th>ID</th><th>Tên</th><th>Giá</th><th>Category</th><th>Image URL</th><th>Mô Tả</th><th /></tr></thead>
+            <thead><tr><th>ID</th><th>Tên</th><th>Giá Gốc</th><th>Giảm</th><th>Giá Bán</th><th>Category</th><th>Image URL</th><th>Mô Tả</th><th /></tr></thead>
             <tbody>
               {foods.map((f) => (
                 <tr key={f.id}>
                   <td>{f.id}</td>
                   <td>{f.name}</td>
                   <td>{Number(f.price).toLocaleString("vi-VN")} d</td>
+                  <td>{Number(f.discountPercent ?? 0)}%</td>
+                  <td>{Number(f.discountedPrice ?? f.price).toLocaleString("vi-VN")} d</td>
                   <td>{f.categoryName}</td>
                   <td className="small text-muted" style={{ maxWidth: 220 }}>{f.imageUrl || "-"}</td>
                   <td className="small text-muted" style={{ maxWidth: 260 }}>{f.description || "-"}</td>
@@ -376,6 +580,7 @@ export default function AdminPanel() {
                           id: f.id,
                           name: f.name ?? "",
                           price: String(f.price ?? ""),
+                          discountPercent: Number(f.discountPercent ?? 0),
                           description: f.description ?? "",
                           categoryId: String(f.categoryId ?? ""),
                           imageUrl: f.imageUrl ?? "",
@@ -402,13 +607,20 @@ export default function AdminPanel() {
         </div>
         <div className="table-responsive">
           <table className="table table-sm align-middle">
-            <thead><tr><th>ID</th><th>Tên</th><th>Giá</th><th>Image URL</th><th>Mô Tả</th><th /></tr></thead>
+            <thead><tr><th>ID</th><th>Tên</th><th>Giá Gốc</th><th>Giảm</th><th>Giá Bán</th><th>Trạng Thái</th><th>Image URL</th><th>Mô Tả</th><th /></tr></thead>
             <tbody>
               {combos.map((c) => (
                 <tr key={c.id}>
                   <td>{c.id}</td>
                   <td>{c.name}</td>
                   <td>{Number(c.price).toLocaleString("vi-VN")} d</td>
+                  <td>{Number(c.discountPercent ?? 0)}%</td>
+                  <td>{Number(c.discountedPrice ?? c.price).toLocaleString("vi-VN")} d</td>
+                  <td>
+                    <span className={`badge ${c.isActive ? "text-bg-success" : "text-bg-secondary"}`}>
+                      {c.isActive ? "Active" : "Inactive"}
+                    </span>
+                  </td>
                   <td className="small text-muted" style={{ maxWidth: 220 }}>{c.imageUrl || "-"}</td>
                   <td className="small text-muted" style={{ maxWidth: 260 }}>{c.description || "-"}</td>
                   <td className="text-end">
@@ -419,9 +631,11 @@ export default function AdminPanel() {
                           id: c.id,
                           name: c.name ?? "",
                           price: String(c.price ?? ""),
+                          discountPercent: Number(c.discountPercent ?? 0),
                           description: c.description ?? "",
                           imageUrl: c.imageUrl ?? "",
-                          isActive: Boolean(c.isActive)
+                          isActive: Boolean(c.isActive),
+                          comboDetails: normalizeComboDetails(c)
                         });
                         setShowEditCombo(true);
                       }}

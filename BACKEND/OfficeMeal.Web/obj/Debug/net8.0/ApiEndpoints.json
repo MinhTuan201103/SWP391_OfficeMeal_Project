@@ -87,7 +87,7 @@
     "Parameters": [
       {
         "Name": "model",
-        "Type": "OfficeMeal.DAL.Models.Combo",
+        "Type": "OfficeMeal.Web.Controllers.CombosController\u002BComboUpsertDto",
         "IsRequired": true
       }
     ],
@@ -108,7 +108,7 @@
       },
       {
         "Name": "model",
-        "Type": "OfficeMeal.DAL.Models.Combo",
+        "Type": "OfficeMeal.Web.Controllers.CombosController\u002BComboUpsertDto",
         "IsRequired": true
       }
     ],
@@ -160,7 +160,7 @@
     "Parameters": [
       {
         "Name": "model",
-        "Type": "OfficeMeal.DAL.Models.DailyMenu",
+        "Type": "OfficeMeal.Web.Controllers.DailyMenusController\u002BDailyMenuUpsertDto",
         "IsRequired": true
       }
     ],
@@ -181,7 +181,7 @@
       },
       {
         "Name": "model",
-        "Type": "OfficeMeal.DAL.Models.DailyMenu",
+        "Type": "OfficeMeal.Web.Controllers.DailyMenusController\u002BDailyMenuUpsertDto",
         "IsRequired": true
       }
     ],
@@ -223,7 +223,7 @@
     "Parameters": [
       {
         "Name": "model",
-        "Type": "OfficeMeal.DAL.Models.Food",
+        "Type": "OfficeMeal.Web.Controllers.FoodsController\u002BFoodUpsertDto",
         "IsRequired": true
       }
     ],
@@ -244,7 +244,7 @@
       },
       {
         "Name": "model",
-        "Type": "OfficeMeal.DAL.Models.Food",
+        "Type": "OfficeMeal.Web.Controllers.FoodsController\u002BFoodUpsertDto",
         "IsRequired": true
       }
     ],

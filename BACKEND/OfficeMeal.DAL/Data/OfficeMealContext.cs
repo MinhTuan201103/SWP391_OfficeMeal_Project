@@ -63,6 +63,7 @@ public partial class OfficeMealContext : DbContext
             entity.Property(e => e.ImageUrl).HasColumnName("ImageURL");
             entity.Property(e => e.IsActive).HasColumnName("IsActive");
             entity.Property(e => e.Price).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.DiscountPercent).HasColumnName("DiscountPercent").HasDefaultValue(0);
 
             entity.HasOne(e => e.Category)
                 .WithMany(e => e.Foods)
@@ -78,6 +79,7 @@ public partial class OfficeMealContext : DbContext
             entity.Property(e => e.ImageUrl).HasColumnName("ImageURL");
             entity.Property(e => e.IsActive).HasColumnName("IsActive");
             entity.Property(e => e.Price).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.DiscountPercent).HasColumnName("DiscountPercent").HasDefaultValue(0);
         });
 
         modelBuilder.Entity<ComboDetail>(entity =>

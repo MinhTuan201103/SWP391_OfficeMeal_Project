@@ -21,6 +21,19 @@ const FOODS_API_URL = "/foods";
 const CART_KEY = "officeMealCart";
 const STATUS_LABELS = ["Pending", "Preparing", "Ready", "Shipping", "Completed", "Cancelled", "Returned"];
 const normalizeList = (value) => (Array.isArray(value) ? value : []);
+const getUserRole = (user) => String(user?.role ?? user?.Role ?? "").toLowerCase();
+const resolveItemType = (item) => {
+  const explicitType = String(item?.itemType ?? "").toLowerCase();
+  if (explicitType === "combo" || explicitType === "food") {
+    return explicitType;
+  }
+  const cartKey = String(item?.cartKey ?? "").toLowerCase();
+  if (cartKey.startsWith("combo-")) return "combo";
+  if (cartKey.startsWith("food-")) return "food";
+  const categoryName = String(item?.categoryName ?? item?.CategoryName ?? "").toLowerCase();
+  if (categoryName.includes("combo")) return "combo";
+  return "food";
+};
 const getMainGroupByCategory = (categoryName) => {
   const c = String(categoryName ?? "").toLowerCase();
   if (c.includes("nuoc") || c.includes("drink") || c.includes("tea") || c.includes("coffee")) return "drink";
@@ -61,10 +74,10 @@ export default function Home() {
   const [foodQuery, setFoodQuery] = useState("");
   const [foodSort, setFoodSort] = useState("popular");
   const [activeCategory, setActiveCategory] = useState("all");
-  const [mainGroup, setMainGroup] = useState("all");
+  const [mainGroup, setMainGroup] = useState("food");
 
   const cartTotal = useMemo(
-    () => cart.reduce((sum, item) => sum + item.quantity * Number(item.price), 0),
+    () => cart.reduce((sum, item) => sum + item.quantity * Number(item.discountedPrice ?? item.price), 0),
     [cart]
   );
   const menuItems = useMemo(() => {
@@ -73,6 +86,12 @@ export default function Home() {
       id: food.id ?? food.Id,
       name: food.name ?? food.Name,
       price: Number(food.price ?? food.Price ?? 0),
+      discountPercent: Number(food.discountPercent ?? food.DiscountPercent ?? 0),
+      discountedPrice: Number(
+        food.discountedPrice ??
+          food.DiscountedPrice ??
+          (Number(food.price ?? food.Price ?? 0) * (100 - Number(food.discountPercent ?? food.DiscountPercent ?? 0))) / 100
+      ),
       description: food.description ?? food.Description ?? "",
       imageUrl: food.imageUrl ?? food.ImageUrl ?? "",
       categoryName: food.categoryName ?? food.CategoryName ?? "",
@@ -85,8 +104,19 @@ export default function Home() {
       id: combo.id ?? combo.Id,
       name: combo.name ?? combo.Name,
       price: Number(combo.price ?? combo.Price ?? 0),
+      discountPercent: Number(combo.discountPercent ?? combo.DiscountPercent ?? 0),
+      discountedPrice: Number(
+        combo.discountedPrice ??
+          combo.DiscountedPrice ??
+          (Number(combo.price ?? combo.Price ?? 0) * (100 - Number(combo.discountPercent ?? combo.DiscountPercent ?? 0))) / 100
+      ),
       description: combo.description ?? combo.Description ?? "",
       imageUrl: combo.imageUrl ?? combo.ImageUrl ?? "",
+      items: normalizeList(combo.items ?? combo.Items).map((item) => ({
+        foodId: item.foodId ?? item.FoodId,
+        foodName: item.foodName ?? item.FoodName ?? "",
+        quantity: Number(item.quantity ?? item.Quantity ?? 1)
+      })),
       categoryName: "combo",
       itemType: "combo",
       isActive: Boolean(combo.isActive ?? combo.IsActive ?? true),
@@ -99,11 +129,14 @@ export default function Home() {
     const keyword = foodQuery.trim().toLowerCase();
     let nextFoods = menuItems.filter((item) => {
       const categoryName = String(item.categoryName ?? item.CategoryName ?? "").toLowerCase();
-      if (mainGroup === "combo" && item.itemType !== "combo") return false;
-      if (mainGroup === "food" || mainGroup === "drink") {
+      if (mainGroup === "combo") {
+        if (item.itemType !== "combo") return false;
+      } else {
         if (item.itemType !== "food") return false;
-        const group = getMainGroupByCategory(categoryName);
-        if (group !== mainGroup) return false;
+        if (mainGroup === "food" || mainGroup === "drink") {
+          const group = getMainGroupByCategory(categoryName);
+          if (group !== mainGroup) return false;
+        }
       }
       if (activeCategory !== "all") {
         if (categoryName !== activeCategory) return false;
@@ -160,6 +193,13 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [cartNotice]);
 
+  useEffect(() => {
+    const flash = sessionStorage.getItem("officeMealFlashNotice");
+    if (!flash) return;
+    setCartNotice(flash);
+    sessionStorage.removeItem("officeMealFlashNotice");
+  }, []);
+
   const refreshUser = useCallback(async () => {
     try {
       const me = await getCurrentUser();
@@ -208,7 +248,7 @@ export default function Home() {
       setOrders([]);
       return;
     }
-    const r = user.role?.toLowerCase?.() ?? "";
+    const r = getUserRole(user);
     try {
       let list;
       if (r === "customer") {
@@ -334,12 +374,27 @@ export default function Home() {
     const payload = {
       deliveryAddress: selectedAddress,
       paymentMethod,
-      items: cart.map((item) => ({
-        foodId: item.itemType === "food" ? item.id : null,
-        comboId: item.itemType === "combo" ? item.id : null,
-        quantity: item.quantity
-      }))
+      items: cart
+        .map((item) => {
+          const itemType = resolveItemType(item);
+          const itemId = Number(item.id);
+          const quantity = Number(item.quantity);
+          if (!Number.isFinite(itemId) || itemId <= 0 || !Number.isFinite(quantity) || quantity <= 0) {
+            return null;
+          }
+          return {
+            foodId: itemType === "food" ? itemId : null,
+            comboId: itemType === "combo" ? itemId : null,
+            quantity
+          };
+        })
+        .filter(Boolean)
     };
+
+    if (!payload.items.length) {
+      alert("Giỏ hàng hiện có dữ liệu không hợp lệ. Vui lòng xóa và thêm lại món/combo rồi đặt lại.");
+      return;
+    }
 
     try {
       const created = await createOrder(payload);
@@ -401,7 +456,7 @@ export default function Home() {
   const safeOrders = normalizeList(orders);
   const kitchenOrders = safeOrders.filter((x) => x.status <= 1);
   const shipperOrders = safeOrders.filter((x) => x.status === 2 || x.status === 3);
-  const role = user?.role?.toLowerCase() ?? "";
+  const role = getUserRole(user);
   const roleMeta = ROLE_META[role] ?? ROLE_META.customer;
   const viewMode = roleMeta.key;
   const canUseCart = viewMode === "customer" && role === "customer";

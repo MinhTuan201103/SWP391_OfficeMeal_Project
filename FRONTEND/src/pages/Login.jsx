@@ -10,11 +10,18 @@ export default function Login() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+    const email = form.email.trim();
+    const password = form.password.trim();
+    if (!email || !password) {
+      setError("Vui long nhap day du email va mat khau.");
+      return;
+    }
     try {
-      await login(form);
+      await login({ email, password });
+      sessionStorage.setItem("officeMealFlashNotice", "Đăng nhập thành công.");
       navigate("/");
     } catch (err) {
-      setError(err?.response?.data?.message || "Dang nhap that bai.");
+      setError(err?.response?.data?.message || "Đăng nhập thất bại.");
     }
   };
 
@@ -26,9 +33,11 @@ export default function Login() {
         <form onSubmit={handleSubmit}>
           <input
             className="form-control mb-3"
+            type="email"
             placeholder="Email"
             value={form.email}
             onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
+            required
           />
           <input
             type="password"
@@ -36,6 +45,8 @@ export default function Login() {
             placeholder="Password"
             value={form.password}
             onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))}
+            required
+            minLength={6}
           />
           {error && <div className="text-danger small mb-3">{error}</div>}
           <button className="btn btn-brand w-100 py-2 rounded-pill" type="submit">

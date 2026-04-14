@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using OfficeMeal.DAL.Data;
 using OfficeMeal.DAL.Models;
 using Microsoft.AspNetCore.Authorization;
+using System.ComponentModel.DataAnnotations;
 
 namespace OfficeMeal.Web.Controllers;
 
@@ -10,6 +11,16 @@ namespace OfficeMeal.Web.Controllers;
 [Route("api/[controller]")]
 public class DailyMenusController : ControllerBase
 {
+    public class DailyMenuUpsertDto
+    {
+        [Range(1, int.MaxValue)]
+        public int TargetId { get; set; }
+        public DailyMenuTargetType TargetType { get; set; }
+        [Range(0, 6)]
+        public int DayOfWeek { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
     private readonly OfficeMealContext _dbContext;
 
     public DailyMenusController(OfficeMealContext dbContext)
@@ -50,21 +61,55 @@ public class DailyMenusController : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> CreateDailyMenu([FromBody] DailyMenu model)
+    public async Task<IActionResult> CreateDailyMenu([FromBody] DailyMenuUpsertDto model)
     {
-        _dbContext.DailyMenus.Add(model);
+        var targetExists = model.TargetType == DailyMenuTargetType.Food
+            ? await _dbContext.Foods.AnyAsync(x => x.Id == model.TargetId)
+            : await _dbContext.Combos.AnyAsync(x => x.Id == model.TargetId);
+        if (!targetExists)
+        {
+            return BadRequest(new { message = "Target does not exist." });
+        }
+        var duplicated = await _dbContext.DailyMenus.AnyAsync(x =>
+            x.TargetId == model.TargetId && x.TargetType == model.TargetType && x.DayOfWeek == model.DayOfWeek);
+        if (duplicated)
+        {
+            return Conflict(new { message = "Daily menu entry already exists." });
+        }
+
+        var dailyMenu = new DailyMenu
+        {
+            TargetId = model.TargetId,
+            TargetType = model.TargetType,
+            DayOfWeek = model.DayOfWeek,
+            IsActive = model.IsActive
+        };
+        _dbContext.DailyMenus.Add(dailyMenu);
         await _dbContext.SaveChangesAsync();
-        return Ok(model);
+        return Ok(dailyMenu);
     }
 
     [HttpPut("{id:int}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> UpdateDailyMenu(int id, [FromBody] DailyMenu model)
+    public async Task<IActionResult> UpdateDailyMenu(int id, [FromBody] DailyMenuUpsertDto model)
     {
         var existing = await _dbContext.DailyMenus.FirstOrDefaultAsync(x => x.Id == id);
         if (existing is null)
         {
             return NotFound();
+        }
+        var targetExists = model.TargetType == DailyMenuTargetType.Food
+            ? await _dbContext.Foods.AnyAsync(x => x.Id == model.TargetId)
+            : await _dbContext.Combos.AnyAsync(x => x.Id == model.TargetId);
+        if (!targetExists)
+        {
+            return BadRequest(new { message = "Target does not exist." });
+        }
+        var duplicated = await _dbContext.DailyMenus.AnyAsync(x =>
+            x.Id != id && x.TargetId == model.TargetId && x.TargetType == model.TargetType && x.DayOfWeek == model.DayOfWeek);
+        if (duplicated)
+        {
+            return Conflict(new { message = "Daily menu entry already exists." });
         }
 
         existing.TargetId = model.TargetId;
