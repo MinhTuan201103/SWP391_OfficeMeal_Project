@@ -89,7 +89,17 @@ public class FoodsController : ControllerBase
 
         _dbContext.Foods.Add(food);
         await _dbContext.SaveChangesAsync();
-        return Ok(food);
+        return Ok(new
+        {
+            food.Id,
+            food.Name,
+            food.Price,
+            food.DiscountPercent,
+            food.Description,
+            food.ImageUrl,
+            food.IsActive,
+            food.CategoryId
+        });
     }
 
     [HttpPut("{id:int}")]
@@ -116,7 +126,17 @@ public class FoodsController : ControllerBase
         existing.IsActive = model.IsActive;
 
         await _dbContext.SaveChangesAsync();
-        return Ok(existing);
+        return Ok(new
+        {
+            existing.Id,
+            existing.Name,
+            existing.Price,
+            existing.DiscountPercent,
+            existing.Description,
+            existing.ImageUrl,
+            existing.IsActive,
+            existing.CategoryId
+        });
     }
 
     [HttpDelete("{id:int}")]

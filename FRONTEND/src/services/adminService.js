@@ -61,3 +61,13 @@ export const updateCombo = async (id, payload) => {
 export const deleteCombo = async (id) => {
   await apiClient.delete(`/combos/${id}`);
 };
+
+export const getKitchenShiftAdminOptions = async () => {
+  const { data } = await apiClient.get("/kitchen-shifts/admin/options");
+  return data;
+};
+
+export const saveTodayKitchenAssignments = async (payload) => {
+  const { data } = await apiClient.put("/kitchen-shifts/admin/today-assignments", payload);
+  return data;
+};

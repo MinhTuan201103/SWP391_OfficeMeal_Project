@@ -8,14 +8,16 @@ import {
   deleteUser,
   getCombos,
   getFoods,
+  getKitchenShiftAdminOptions,
   getRoles,
   getUsers,
+  saveTodayKitchenAssignments,
   updateCombo,
   updateFood,
   updateUser
 } from "../../services/adminService";
 
-const emptyUser = { fullName: "", email: "", phone: "", address: "", roleId: "" };
+const emptyUser = { fullName: "", email: "", password: "", phone: "", address: "", roleId: "" };
 const emptyFood = { name: "", categoryId: "", price: "", discountPercent: 0, description: "", imageUrl: "" };
 const emptyCombo = { name: "", price: "", discountPercent: 0, description: "", imageUrl: "", isActive: true, comboDetails: [{ foodId: "", quantity: 1 }] };
 const normalizeComboDetails = (combo) => {
@@ -48,6 +50,12 @@ export default function AdminPanel() {
   const [editingCombo, setEditingCombo] = useState(emptyCombo);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [comboError, setComboError] = useState("");
+  const [shiftUsers, setShiftUsers] = useState([]);
+  const [shiftForm, setShiftForm] = useState({ shift1UserId: "", shift2UserId: "" });
+  const [shiftSaving, setShiftSaving] = useState(false);
+  const [shiftMessage, setShiftMessage] = useState("");
+  const [shiftError, setShiftError] = useState("");
+  const [showCreateUserPassword, setShowCreateUserPassword] = useState(false);
 
   const categoryOptions = useMemo(() => {
     const map = new Map();
@@ -69,37 +77,91 @@ export default function AdminPanel() {
 
   useEffect(() => {
     reload().catch(() => {});
+    loadShiftOptions().catch(() => {});
   }, []);
+
+  const loadShiftOptions = async () => {
+    try {
+      const data = await getKitchenShiftAdminOptions();
+      const usersList = Array.isArray(data?.kitchenUsers) ? data.kitchenUsers : [];
+      setShiftUsers(usersList);
+      setShiftForm({
+        shift1UserId: data?.shift1UserId ? String(data.shift1UserId) : "",
+        shift2UserId: data?.shift2UserId ? String(data.shift2UserId) : ""
+      });
+      setShiftError("");
+    } catch (error) {
+      setShiftError(error?.response?.data?.message || "Không thể tải danh sách phân ca.");
+    }
+  };
+
+  const onSaveShift = async (e) => {
+    e.preventDefault();
+    setShiftMessage("");
+    setShiftError("");
+    if (shiftForm.shift1UserId && shiftForm.shift1UserId === shiftForm.shift2UserId) {
+      setShiftError("Không thể chọn cùng một tài khoản cho cả 2 ca.");
+      return;
+    }
+    setShiftSaving(true);
+    try {
+      const payload = {
+        shift1UserId: shiftForm.shift1UserId ? Number(shiftForm.shift1UserId) : null,
+        shift2UserId: shiftForm.shift2UserId ? Number(shiftForm.shift2UserId) : null
+      };
+      const res = await saveTodayKitchenAssignments(payload);
+      setShiftMessage(res?.message || "Lưu phân ca thành công.");
+      await loadShiftOptions();
+    } catch (error) {
+      setShiftError(error?.response?.data?.message || "Không thể lưu phân ca.");
+    } finally {
+      setShiftSaving(false);
+    }
+  };
 
   const onCreateUser = async (e) => {
     e.preventDefault();
-    await createUser({
-      fullName: userForm.fullName,
-      email: userForm.email,
-      phone: userForm.phone,
-      address: userForm.address,
-      roleId: Number(userForm.roleId),
-      password: "123456"
-    });
-    setUserForm(emptyUser);
-    setShowCreateUser(false);
-    await reload();
+    const pwd = String(userForm.password ?? "").trim();
+    if (pwd.length < 6) {
+      alert("Mật khẩu phải có ít nhất 6 ký tự.");
+      return;
+    }
+    try {
+      await createUser({
+        fullName: userForm.fullName,
+        email: userForm.email,
+        phone: userForm.phone,
+        address: userForm.address,
+        roleId: Number(userForm.roleId),
+        password: pwd
+      });
+      setUserForm(emptyUser);
+      setShowCreateUserPassword(false);
+      setShowCreateUser(false);
+      await reload();
+    } catch (error) {
+      alert(error?.response?.data?.message || "Tạo user thất bại.");
+    }
   };
 
   const onCreateFood = async (e) => {
     e.preventDefault();
-    await createFood({
-      name: foodForm.name,
-      categoryId: Number(foodForm.categoryId),
-      price: Number(foodForm.price || 0),
-      discountPercent: Number(foodForm.discountPercent || 0),
-      description: foodForm.description,
-      imageUrl: foodForm.imageUrl || null,
-      isActive: true
-    });
-    setFoodForm(emptyFood);
-    setShowCreateFood(false);
-    await reload();
+    try {
+      await createFood({
+        name: foodForm.name,
+        categoryId: Number(foodForm.categoryId),
+        price: Number(foodForm.price || 0),
+        discountPercent: Number(foodForm.discountPercent || 0),
+        description: foodForm.description,
+        imageUrl: foodForm.imageUrl || null,
+        isActive: true
+      });
+      setFoodForm(emptyFood);
+      setShowCreateFood(false);
+      await reload();
+    } catch (error) {
+      alert(error?.response?.data?.message || "Tạo món thất bại.");
+    }
   };
 
   const onCreateCombo = async (e) => {
@@ -132,32 +194,40 @@ export default function AdminPanel() {
 
   const onSaveUser = async () => {
     if (!editingUser?.id) return;
-    await updateUser(editingUser.id, {
-      fullName: editingUser.fullName,
-      phone: editingUser.phone,
-      address: editingUser.address,
-      roleId: Number(editingUser.roleId),
-      isActive: Boolean(editingUser.isActive)
-    });
-    setShowEditUser(false);
-    setEditingUser(emptyUser);
-    await reload();
+    try {
+      await updateUser(editingUser.id, {
+        fullName: editingUser.fullName,
+        phone: editingUser.phone,
+        address: editingUser.address,
+        roleId: Number(editingUser.roleId),
+        isActive: Boolean(editingUser.isActive)
+      });
+      setShowEditUser(false);
+      setEditingUser(emptyUser);
+      await reload();
+    } catch (error) {
+      alert(error?.response?.data?.message || "Cập nhật user thất bại.");
+    }
   };
 
   const onSaveFood = async () => {
     if (!editingFood?.id) return;
-    await updateFood(editingFood.id, {
-      name: editingFood.name,
-      price: Number(editingFood.price),
-      discountPercent: Number(editingFood.discountPercent || 0),
-      description: editingFood.description,
-      categoryId: Number(editingFood.categoryId),
-      imageUrl: editingFood.imageUrl ?? null,
-      isActive: Boolean(editingFood.isActive)
-    });
-    setShowEditFood(false);
-    setEditingFood(emptyFood);
-    await reload();
+    try {
+      await updateFood(editingFood.id, {
+        name: editingFood.name,
+        price: Number(editingFood.price),
+        discountPercent: Number(editingFood.discountPercent || 0),
+        description: editingFood.description,
+        categoryId: Number(editingFood.categoryId),
+        imageUrl: editingFood.imageUrl ?? null,
+        isActive: Boolean(editingFood.isActive)
+      });
+      setShowEditFood(false);
+      setEditingFood(emptyFood);
+      await reload();
+    } catch (error) {
+      alert(error?.response?.data?.message || "Cập nhật món thất bại.");
+    }
   };
 
   const onSaveCombo = async () => {
@@ -208,23 +278,62 @@ export default function AdminPanel() {
   return (
     <div className="role-panel role-admin">
       {showCreateUser && (
-        <div className="cart-drawer-backdrop d-flex align-items-center justify-content-center" onClick={() => setShowCreateUser(false)}>
+        <div
+          className="cart-drawer-backdrop d-flex align-items-center justify-content-center"
+          onClick={() => {
+            setShowCreateUser(false);
+            setShowCreateUserPassword(false);
+          }}
+        >
           <div className="card border-0 shadow p-4" style={{ width: "min(680px, 92vw)" }} onClick={(e) => e.stopPropagation()}>
-            <h5 className="mb-3">Tao User</h5>
+            <h5 className="mb-3">Tạo User</h5>
             <form className="row g-2" onSubmit={onCreateUser}>
-              <div className="col-md-6"><input className="form-control" placeholder="Ho ten" value={userForm.fullName} onChange={(e) => setUserForm((s) => ({ ...s, fullName: e.target.value }))} required /></div>
-              <div className="col-md-6"><input className="form-control" placeholder="Email" value={userForm.email} onChange={(e) => setUserForm((s) => ({ ...s, email: e.target.value }))} required /></div>
-              <div className="col-md-6"><input className="form-control" placeholder="Phone" value={userForm.phone} onChange={(e) => setUserForm((s) => ({ ...s, phone: e.target.value }))} /></div>
+              <div className="col-md-6"><input className="form-control" placeholder="Họ Tên" value={userForm.fullName} onChange={(e) => setUserForm((s) => ({ ...s, fullName: e.target.value }))} required /></div>
+              <div className="col-md-6"><input className="form-control" placeholder="Email" type="email" autoComplete="off" value={userForm.email} onChange={(e) => setUserForm((s) => ({ ...s, email: e.target.value }))} required /></div>
+              <div className="col-12">
+                <label className="form-label small mb-1">Mật Khẩu (Tối Thiểu 6 Ký Tự)</label>
+                <div className="input-group">
+                  <input
+                    className="form-control"
+                    placeholder="Mật Khẩu Đăng Nhập"
+                    type={showCreateUserPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={userForm.password}
+                    onChange={(e) => setUserForm((s) => ({ ...s, password: e.target.value }))}
+                    minLength={6}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => setShowCreateUserPassword((v) => !v)}
+                  >
+                    {showCreateUserPassword ? "Ẩn" : "Hiện"}
+                  </button>
+                </div>
+              </div>
+              <div className="col-md-6"><input className="form-control" placeholder="Số Điện Thoại" value={userForm.phone} onChange={(e) => setUserForm((s) => ({ ...s, phone: e.target.value }))} /></div>
               <div className="col-md-6">
                 <select className="form-select" value={userForm.roleId} onChange={(e) => setUserForm((s) => ({ ...s, roleId: e.target.value }))} required>
                   <option value="">Role</option>
                   {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
               </div>
-              <div className="col-12"><input className="form-control" placeholder="Dia chi" value={userForm.address} onChange={(e) => setUserForm((s) => ({ ...s, address: e.target.value }))} /></div>
+              <div className="col-12"><input className="form-control" placeholder="Địa Chỉ" value={userForm.address} onChange={(e) => setUserForm((s) => ({ ...s, address: e.target.value }))} /></div>
               <div className="col-12 d-flex justify-content-end gap-2 mt-3">
-                <button type="button" className="btn btn-outline-secondary" onClick={() => setShowCreateUser(false)}>Huy</button>
-                <button className="btn btn-brand" type="submit">Tao user</button>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => {
+                    setShowCreateUser(false);
+                    setShowCreateUserPassword(false);
+                  }}
+                >
+                  Hủy
+                </button>
+                <button className="btn btn-brand" type="submit">
+                  Tạo User
+                </button>
               </div>
             </form>
           </div>
@@ -513,8 +622,64 @@ export default function AdminPanel() {
 
       <div className="card border-0 shadow p-3 mb-4">
         <div className="d-flex justify-content-between align-items-center mb-3">
+          <h5 className="mb-0">Phân Ca Kitchen Manager (Hôm Nay)</h5>
+          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => void loadShiftOptions()}>
+            Tải Lại
+          </button>
+        </div>
+        <form className="row g-3" onSubmit={onSaveShift}>
+          <div className="col-md-6">
+            <label className="form-label">Ca 1 (07:00 - 14:00)</label>
+            <select
+              className="form-select"
+              value={shiftForm.shift1UserId}
+              onChange={(e) => setShiftForm((s) => ({ ...s, shift1UserId: e.target.value }))}
+            >
+              <option value="">-- Chưa Chọn --</option>
+              {shiftUsers.map((u) => (
+                <option key={`shift1-${u.id}`} value={u.id}>
+                  {u.fullName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="col-md-6">
+            <label className="form-label">Ca 2 (14:00 - 21:00)</label>
+            <select
+              className="form-select"
+              value={shiftForm.shift2UserId}
+              onChange={(e) => setShiftForm((s) => ({ ...s, shift2UserId: e.target.value }))}
+            >
+              <option value="">-- Chưa Chọn --</option>
+              {shiftUsers.map((u) => (
+                <option key={`shift2-${u.id}`} value={u.id}>
+                  {u.fullName}
+                </option>
+              ))}
+            </select>
+          </div>
+          {shiftError && <div className="col-12 text-danger small">{shiftError}</div>}
+          {shiftMessage && <div className="col-12 text-success small">{shiftMessage}</div>}
+          <div className="col-12 d-flex justify-content-end">
+            <button className="btn btn-brand" type="submit" disabled={shiftSaving}>
+              {shiftSaving ? "Đang Lưu..." : "Lưu Phân Ca"}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="card border-0 shadow p-3 mb-4">
+        <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="mb-0">CRUD User (khong gom Admin)</h5>
-          <button className="btn btn-brand btn-sm" onClick={() => setShowCreateUser(true)}>+ Tao user</button>
+          <button
+            className="btn btn-brand btn-sm"
+            onClick={() => {
+              setShowCreateUserPassword(false);
+              setShowCreateUser(true);
+            }}
+          >
+            + Tạo User
+          </button>
         </div>
         <div className="table-responsive">
           <table className="table table-sm align-middle">

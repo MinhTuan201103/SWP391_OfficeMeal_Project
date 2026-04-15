@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.EntityFrameworkCore;
 using OfficeMeal.BLL.ViewModels;
 using OfficeMeal.DAL.Data;
@@ -122,6 +123,12 @@ public class OrderService : IOrderService
         }
         else if (string.Equals(role, "KitchenManager", StringComparison.OrdinalIgnoreCase))
         {
+            var isActiveNow = await IsKitchenManagerInActiveShiftNowAsync(userId);
+            if (!isActiveNow)
+            {
+                return Array.Empty<OrderResponseViewModel>();
+            }
+
             query = query.Where(x => x.Status == OrderStatus.Pending || x.Status == OrderStatus.Preparing);
         }
         else if (string.Equals(role, "Shipper", StringComparison.OrdinalIgnoreCase))
@@ -142,6 +149,15 @@ public class OrderService : IOrderService
 
         ValidateTransition(order, newStatus, role);
 
+        if (string.Equals(role, "KitchenManager", StringComparison.OrdinalIgnoreCase))
+        {
+            var isActiveNow = await IsKitchenManagerInActiveShiftNowAsync(userId);
+            if (!isActiveNow)
+            {
+                throw new InvalidOperationException("Bạn không được xem hoặc xử lý đơn ngoài ca được phân.");
+            }
+        }
+
         order.Status = newStatus;
         if (string.Equals(role, "KitchenManager", StringComparison.OrdinalIgnoreCase))
         {
@@ -154,6 +170,55 @@ public class OrderService : IOrderService
 
         await _dbContext.SaveChangesAsync();
         return await QueryOrders().FirstAsync(x => x.OrderId == orderId);
+    }
+
+    /// <summary>
+    /// Kitchen Manager chỉ được thao tác khi đang ở ca active hiện tại.
+    /// </summary>
+    private async Task<bool> IsKitchenManagerInActiveShiftNowAsync(int kitchenUserId)
+    {
+        var conn = _dbContext.Database.GetDbConnection();
+        var openedHere = false;
+        if (conn.State != ConnectionState.Open)
+        {
+            await conn.OpenAsync();
+            openedHere = true;
+        }
+
+        var now = DateTime.Now;
+        try
+        {
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+SELECT CASE WHEN EXISTS (
+  SELECT 1
+  FROM KitchenShiftAssignments a
+  INNER JOIN KitchenShifts s ON s.Id = a.ShiftId
+  WHERE a.UserId = @UserId
+    AND a.WorkDate = CONVERT(date, @Now)
+    AND CAST(@Now AS time) >= CAST(s.StartTime AS time)
+    AND CAST(@Now AS time) < CAST(s.EndTime AS time)
+) THEN 1 ELSE 0 END
+""";
+            var pUser = cmd.CreateParameter();
+            pUser.ParameterName = "@UserId";
+            pUser.Value = kitchenUserId;
+            cmd.Parameters.Add(pUser);
+            var pNow = cmd.CreateParameter();
+            pNow.ParameterName = "@Now";
+            pNow.Value = now;
+            cmd.Parameters.Add(pNow);
+
+            var scalar = await cmd.ExecuteScalarAsync();
+            return scalar is not null && scalar != DBNull.Value && Convert.ToInt32(scalar) != 0;
+        }
+        finally
+        {
+            if (openedHere && conn.State == ConnectionState.Open)
+            {
+                await conn.CloseAsync();
+            }
+        }
     }
 
     private IQueryable<OrderResponseViewModel> QueryOrders()

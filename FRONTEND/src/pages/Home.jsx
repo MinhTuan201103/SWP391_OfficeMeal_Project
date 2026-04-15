@@ -10,6 +10,7 @@ import {
 import { getCurrentUser, logout, subscribeAuthChanges } from "../services/authService";
 import { createOrderHubConnection } from "../services/orderHub";
 import apiClient from "../services/apiClient";
+import { getMyKitchenShiftStatus } from "../services/kitchenShiftService";
 import CustomerPanel from "../components/home/CustomerPanel";
 import KitchenPanel from "../components/home/KitchenPanel";
 import ShipperPanel from "../components/home/ShipperPanel";
@@ -75,6 +76,8 @@ export default function Home() {
   const [foodSort, setFoodSort] = useState("popular");
   const [activeCategory, setActiveCategory] = useState("all");
   const [mainGroup, setMainGroup] = useState("food");
+  const [kitchenShiftStatus, setKitchenShiftStatus] = useState(null);
+  const [kitchenShiftLoading, setKitchenShiftLoading] = useState(false);
 
   const cartTotal = useMemo(
     () => cart.reduce((sum, item) => sum + item.quantity * Number(item.discountedPrice ?? item.price), 0),
@@ -273,9 +276,42 @@ export default function Home() {
     }
   }, [user]);
 
+  const reloadKitchenShiftStatus = useCallback(async () => {
+    if (!user || getUserRole(user) !== "kitchenmanager") {
+      setKitchenShiftStatus(null);
+      return;
+    }
+    setKitchenShiftLoading(true);
+    try {
+      const data = await getMyKitchenShiftStatus();
+      setKitchenShiftStatus(data ?? null);
+    } catch {
+      setKitchenShiftStatus({
+        isAssignedToday: false,
+        isActive: false,
+        canOperate: false,
+        message: "Không thể tải trạng thái ca. Vui lòng kiểm tra cấu hình phân ca."
+      });
+    } finally {
+      setKitchenShiftLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     void reloadOrders();
   }, [reloadOrders]);
+
+  useEffect(() => {
+    if (!user || getUserRole(user) !== "kitchenmanager") {
+      setKitchenShiftStatus(null);
+      return undefined;
+    }
+    void reloadKitchenShiftStatus();
+    const timer = setInterval(() => {
+      void reloadKitchenShiftStatus();
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [user, reloadKitchenShiftStatus]);
 
   useEffect(() => {
     const unsubscribe = subscribeAuthChanges(() => {
@@ -426,6 +462,10 @@ export default function Home() {
   };
 
   const moveStatus = async (order, nextStatus) => {
+    if (getUserRole(user) === "kitchenmanager" && kitchenShiftStatus && !kitchenShiftStatus.canOperate) {
+      alert(kitchenShiftStatus.message || "Bạn đang ngoài ca, chưa thể thao tác.");
+      return;
+    }
     try {
       const oid = order.orderId ?? order.OrderId;
       const updated = await updateOrderStatus(oid, nextStatus);
@@ -446,6 +486,10 @@ export default function Home() {
   };
 
   const batchSetFoodAvailability = async (updates) => {
+    if (getUserRole(user) === "kitchenmanager" && kitchenShiftStatus && !kitchenShiftStatus.canOperate) {
+      alert(kitchenShiftStatus.message || "Bạn đang ngoài ca, chưa thể thao tác.");
+      return;
+    }
     if (!updates.length) return;
     await Promise.all(
       updates.map(({ id, isActive }) =>
@@ -596,6 +640,8 @@ export default function Home() {
                 statusLabels={ORDER_STATUS_VI}
                 moveStatus={moveStatus}
                 batchSetFoodAvailability={batchSetFoodAvailability}
+                shiftStatus={kitchenShiftStatus}
+                shiftLoading={kitchenShiftLoading}
               />
             )}
 

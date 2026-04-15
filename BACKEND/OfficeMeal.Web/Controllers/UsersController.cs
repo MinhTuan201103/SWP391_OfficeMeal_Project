@@ -114,7 +114,16 @@ public class UsersController : ControllerBase
 
         _dbContext.Users.Add(user);
         await _dbContext.SaveChangesAsync();
-        return Ok(user);
+        return Ok(new
+        {
+            user.Id,
+            user.FullName,
+            user.Email,
+            user.Phone,
+            user.Address,
+            user.RoleId,
+            user.IsActive
+        });
     }
 
     [HttpPut("{id:int}")]
@@ -145,7 +154,16 @@ public class UsersController : ControllerBase
         user.RoleId = model.RoleId;
         user.IsActive = model.IsActive;
         await _dbContext.SaveChangesAsync();
-        return Ok(user);
+        return Ok(new
+        {
+            user.Id,
+            user.FullName,
+            user.Email,
+            user.Phone,
+            user.Address,
+            user.RoleId,
+            user.IsActive
+        });
     }
 
     [HttpDelete("{id:int}")]

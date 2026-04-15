@@ -21,7 +21,24 @@ function getOrderStatus(order) {
   return Number.isFinite(n) ? n : 0;
 }
 
-export default function KitchenPanel({ user, kitchenOrders, foods, statusLabels, moveStatus, batchSetFoodAvailability }) {
+function formatSeconds(totalSeconds) {
+  const s = Math.max(0, Number(totalSeconds) || 0);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+}
+
+export default function KitchenPanel({
+  user,
+  kitchenOrders,
+  foods,
+  statusLabels,
+  moveStatus,
+  batchSetFoodAvailability,
+  shiftStatus,
+  shiftLoading
+}) {
   const [markModalOpen, setMarkModalOpen] = useState(false);
   const [searchUn, setSearchUn] = useState("");
   const [pickUnavailableId, setPickUnavailableId] = useState("");
@@ -31,6 +48,12 @@ export default function KitchenPanel({ user, kitchenOrders, foods, statusLabels,
   /** Các món đang tạm hết (tick để mở bán lại). */
   const [reopenSelection, setReopenSelection] = useState([]);
   const [reopening, setReopening] = useState(false);
+  const [nowTick, setNowTick] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const totals = useMemo(() => aggregateKitchenPrep(kitchenOrders), [kitchenOrders]);
 
@@ -126,6 +149,18 @@ export default function KitchenPanel({ user, kitchenOrders, foods, statusLabels,
     }
   };
 
+  const canOperate = Boolean(shiftStatus?.canOperate ?? true);
+  const currentShiftEndAt = shiftStatus?.currentShiftEndAt ? new Date(shiftStatus.currentShiftEndAt) : null;
+  const nextShiftStartAt = shiftStatus?.nextShiftStartAt ? new Date(shiftStatus.nextShiftStartAt) : null;
+
+  const liveRemainCurrent = currentShiftEndAt
+    ? Math.max(0, Math.floor((currentShiftEndAt.getTime() - nowTick) / 1000))
+    : shiftStatus?.secondsUntilShiftEnd ?? null;
+
+  const liveRemainNext = nextShiftStartAt
+    ? Math.max(0, Math.floor((nextShiftStartAt.getTime() - nowTick) / 1000))
+    : shiftStatus?.secondsUntilNextShift ?? null;
+
   return (
     <div className="role-panel role-kitchen">
       <div className="card border-0 shadow p-3 mb-4">
@@ -141,6 +176,29 @@ export default function KitchenPanel({ user, kitchenOrders, foods, statusLabels,
         </div>
         {!user && (
           <div className="text-muted mt-2">Vui lòng đăng nhập bằng tài khoản Quản Lý Bếp hoặc Quản Trị Viên.</div>
+        )}
+        {shiftLoading && <div className="small text-muted mt-2">Đang Kiểm Tra Trạng Thái Ca...</div>}
+        {shiftStatus && (
+          <div className={`mt-3 p-3 rounded-3 border ${canOperate ? "border-success bg-success-subtle" : "border-warning bg-warning-subtle"}`}>
+            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div className="fw-semibold">
+                Trạng Thái Ca: {canOperate ? "Active" : "Inactive"}
+              </div>
+              {!canOperate && <span className="badge text-bg-warning">Ngoài Ca</span>}
+              {canOperate && <span className="badge text-bg-success">Trong Ca</span>}
+            </div>
+            <div className="small mt-1">{shiftStatus.message}</div>
+            {canOperate && liveRemainCurrent !== null && (
+              <div className="small mt-1">
+                Thời Gian Còn Lại Trong Ca: <strong>{formatSeconds(liveRemainCurrent)}</strong>
+              </div>
+            )}
+            {!canOperate && shiftStatus?.nextShiftName && liveRemainNext !== null && (
+              <div className="small mt-1">
+                Đến {shiftStatus.nextShiftName} Sau: <strong>{formatSeconds(liveRemainNext)}</strong>
+              </div>
+            )}
+          </div>
         )}
 
         {totals.length > 0 && (
@@ -193,12 +251,24 @@ export default function KitchenPanel({ user, kitchenOrders, foods, statusLabels,
               )}
               <div className="mt-3 d-flex gap-2 flex-wrap">
                 {st === 0 && (
-                  <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => moveStatus(order, 1)}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => moveStatus(order, 1)}
+                    disabled={!canOperate}
+                    title={!canOperate ? "Bạn đang ngoài ca nên chưa thể thao tác." : undefined}
+                  >
                     Bắt Đầu Nấu
                   </button>
                 )}
                 {st === 1 && (
-                  <button type="button" className="btn btn-sm btn-outline-success" onClick={() => moveStatus(order, 2)}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-success"
+                    onClick={() => moveStatus(order, 2)}
+                    disabled={!canOperate}
+                    title={!canOperate ? "Bạn đang ngoài ca nên chưa thể thao tác." : undefined}
+                  >
                     Nấu Xong
                   </button>
                 )}
@@ -214,7 +284,13 @@ export default function KitchenPanel({ user, kitchenOrders, foods, statusLabels,
             <UtensilsCrossed size={18} />
             Quản Lý Món Ăn
           </h6>
-          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={openMarkModal}>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            onClick={openMarkModal}
+            disabled={!canOperate}
+            title={!canOperate ? "Bạn đang ngoài ca nên chưa thể thao tác." : undefined}
+          >
             Đánh Dấu Tạm Hết Món
           </button>
         </div>
@@ -239,7 +315,8 @@ export default function KitchenPanel({ user, kitchenOrders, foods, statusLabels,
                   type="button"
                   className="btn btn-sm btn-success"
                   onClick={handleReopenSelected}
-                  disabled={reopening || reopenSelection.length === 0}
+                  disabled={reopening || reopenSelection.length === 0 || !canOperate}
+                  title={!canOperate ? "Bạn đang ngoài ca nên chưa thể thao tác." : undefined}
                 >
                   {reopening ? "Đang Xử Lý..." : "Mở Bán Lại"}
                 </button>
