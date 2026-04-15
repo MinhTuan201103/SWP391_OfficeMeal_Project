@@ -1,6 +1,25 @@
+# --- VISUAL STUDIO / .NET ---
 .vs/
 [Bb]in/
 [Oo]bj/
 *.user
 *.suo
 *.vsidx
+*.opendb
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+# --- FRONTEND (Node/React/Vite) ---
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+npm-debug.log*
+
+# --- OS ---
+.DS_Store
+Thumbs.db
