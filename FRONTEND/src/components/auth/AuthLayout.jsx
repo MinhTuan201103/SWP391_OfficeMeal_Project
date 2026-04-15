@@ -1,45 +1,41 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
-export default function AuthLayout({ title, subtitle, children, footer }) {
+export default function AuthLayout({ formTitle, formSubtitle, welcomeTagline, children, footer }) {
   return (
-    <div className="auth-shell">
-      <div className="auth-shell__bg" aria-hidden>
-        <div className="auth-shell__gradient" />
-        <div className="auth-shell__orb auth-shell__orb--1" />
-        <div className="auth-shell__orb auth-shell__orb--2" />
-        <div className="auth-shell__orb auth-shell__orb--3" />
-        <div className="auth-shell__shine" />
-        <div className="auth-shell__grain" />
-      </div>
-
-      <Link to="/" className="auth-shell__back">
+    <div className="auth-split">
+      <Link to="/" className="auth-split__back">
         <ArrowLeft size={18} strokeWidth={2.25} />
         <span>Trang Chủ</span>
       </Link>
 
       <motion.div
-        className="auth-shell__wrap"
-        initial={{ opacity: 0, y: 28 }}
+        className="auth-split__card"
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       >
-        <div className="auth-shell__hero">
-          <div className="auth-shell__badge">
-            <Sparkles size={14} className="auth-shell__badge-icon" />
-            OfficeMeal
-          </div>
-          <h1 className="auth-shell__title">{title}</h1>
-          <p className="auth-shell__subtitle">{subtitle}</p>
-        </div>
-
-        <div className="auth-shell__card">
+        <div className="auth-split__form-col">
+          <h1 className="auth-split__form-title">{formTitle}</h1>
+          <p className="auth-split__form-lead">{formSubtitle}</p>
           {children}
           {footer}
         </div>
 
-        <p className="auth-shell__fineprint">Cơm Văn Phòng · Giao Nhanh · Chuẩn Vị</p>
+        <aside className="auth-split__welcome" aria-label="Chào Mừng">
+          <div className="auth-split__welcome-bg" aria-hidden />
+          <div className="auth-split__sphere auth-split__sphere--1" aria-hidden />
+          <div className="auth-split__sphere auth-split__sphere--2" aria-hidden />
+          <div className="auth-split__sphere auth-split__sphere--3" aria-hidden />
+          <div className="auth-split__sphere auth-split__sphere--4" aria-hidden />
+          <div className="auth-split__welcome-content">
+            <img src="/brand-logo.png" alt="OfficeMeal" className="auth-split__logo" width={120} height={120} />
+            <p className="auth-split__brand">OfficeMeal</p>
+            <h2 className="auth-split__welcome-title">Chào Mừng Đến Với OfficeMeal</h2>
+            <p className="auth-split__welcome-text">{welcomeTagline}</p>
+          </div>
+        </aside>
       </motion.div>
     </div>
   );

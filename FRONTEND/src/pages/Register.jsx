@@ -13,6 +13,7 @@ export default function Register() {
     password: ""
   });
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -38,8 +39,9 @@ export default function Register() {
 
   return (
     <AuthLayout
-      title="Đăng Ký"
-      subtitle="Tạo Tài Khoản Mới Để Đặt Cơm Trưa Văn Phòng, Ưu Đãi Và Tích Điểm Sau Này."
+      formTitle="Đăng Ký"
+      formSubtitle="Tạo Tài Khoản Khách Hàng Để Đặt Món Và Theo Dõi Đơn Hàng."
+      welcomeTagline="Tham Gia Cùng Hàng Ngàn Khách Hàng Tin Dùng OfficeMeal Mỗi Ngày."
       footer={
         <p className="auth-shell__switch mb-0">
           Đã Có Tài Khoản?{" "}
@@ -49,7 +51,7 @@ export default function Register() {
         </p>
       }
     >
-      <form className="auth-shell__form" onSubmit={handleSubmit} noValidate>
+      <form className="auth-shell__form auth-shell__form--scroll" onSubmit={handleSubmit} noValidate>
         <div className="auth-field">
           <label className="auth-field__label" htmlFor="reg-name">
             Họ Và Tên
@@ -112,12 +114,12 @@ export default function Register() {
           <label className="auth-field__label" htmlFor="reg-password">
             Mật Khẩu
           </label>
-          <div className="auth-field__control">
+          <div className="auth-field__control auth-field__control--with-toggle">
             <Lock className="auth-field__icon" size={18} strokeWidth={2} aria-hidden />
             <input
               id="reg-password"
-              type="password"
-              className="form-control auth-field__input"
+              type={showPassword ? "text" : "password"}
+              className="form-control auth-field__input auth-field__input--toggle"
               autoComplete="new-password"
               placeholder="Tối Thiểu 6 Ký Tự"
               value={form.password}
@@ -125,12 +127,20 @@ export default function Register() {
               required
               minLength={6}
             />
+            <button
+              type="button"
+              className="auth-field__show-btn"
+              tabIndex={-1}
+              onClick={() => setShowPassword((v) => !v)}
+            >
+              {showPassword ? "Ẩn" : "Hiện"}
+            </button>
           </div>
         </div>
 
         {error && <div className="auth-shell__error">{error}</div>}
 
-        <button className="btn btn-brand auth-shell__submit w-100" type="submit">
+        <button className="btn auth-split__submit w-100" type="submit">
           Tạo Tài Khoản
         </button>
       </form>
