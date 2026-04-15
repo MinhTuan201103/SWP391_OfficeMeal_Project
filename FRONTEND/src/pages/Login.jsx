@@ -1,11 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Lock, Mail } from "lucide-react";
 import { login } from "../services/authService";
+import AuthLayout from "../components/auth/AuthLayout.jsx";
 
 export default function Login() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    const n = sessionStorage.getItem("officeMealFlashNotice");
+    if (n) {
+      setNotice(n);
+      sessionStorage.removeItem("officeMealFlashNotice");
+    }
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -13,50 +24,78 @@ export default function Login() {
     const email = form.email.trim();
     const password = form.password.trim();
     if (!email || !password) {
-      setError("Vui long nhap day du email va mat khau.");
+      setError("Vui Lòng Nhập Đủ Email Và Mật Khẩu.");
       return;
     }
     try {
       await login({ email, password });
-      sessionStorage.setItem("officeMealFlashNotice", "Đăng nhập thành công.");
+      sessionStorage.setItem("officeMealFlashNotice", "Đăng Nhập Thành Công.");
       navigate("/");
     } catch (err) {
-      setError(err?.response?.data?.message || "Đăng nhập thất bại.");
+      setError(err?.response?.data?.message || "Đăng Nhập Thất Bại.");
     }
   };
 
   return (
-    <div className="auth-page d-flex align-items-center justify-content-center py-5">
-      <div className="card auth-card border-0 shadow p-4 p-md-5">
-        <p className="small text-uppercase text-secondary letter-spacing mb-1">Office Meal</p>
-        <h3 className="page-section-title mb-4">Dang nhap</h3>
-        <form onSubmit={handleSubmit}>
-          <input
-            className="form-control mb-3"
-            type="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
-            required
-          />
-          <input
-            type="password"
-            className="form-control mb-3"
-            placeholder="Password"
-            value={form.password}
-            onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))}
-            required
-            minLength={6}
-          />
-          {error && <div className="text-danger small mb-3">{error}</div>}
-          <button className="btn btn-brand w-100 py-2 rounded-pill" type="submit">
-            Dang nhap
-          </button>
-        </form>
-        <div className="small text-secondary mt-3">
-          Chua co tai khoan? <Link to="/register">Dang ky</Link>
+    <AuthLayout
+      title="Đăng Nhập"
+      subtitle="Đăng Nhập Để Đặt Cơm Văn Phòng Nhanh Chóng, Theo Dõi Đơn Mọi Lúc."
+      footer={
+        <p className="auth-shell__switch mb-0">
+          Chưa Có Tài Khoản?{" "}
+          <Link to="/register" className="auth-shell__switch-link">
+            Đăng Ký Ngay
+          </Link>
+        </p>
+      }
+    >
+      <form className="auth-shell__form" onSubmit={handleSubmit} noValidate>
+        {notice && <div className="auth-shell__notice">{notice}</div>}
+        <div className="auth-field">
+          <label className="auth-field__label" htmlFor="login-email">
+            Email
+          </label>
+          <div className="auth-field__control">
+            <Mail className="auth-field__icon" size={18} strokeWidth={2} aria-hidden />
+            <input
+              id="login-email"
+              className="form-control auth-field__input"
+              type="email"
+              autoComplete="email"
+              placeholder="Email@CongTy.com"
+              value={form.email}
+              onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
+              required
+            />
+          </div>
         </div>
-      </div>
-    </div>
+
+        <div className="auth-field">
+          <label className="auth-field__label" htmlFor="login-password">
+            Mật Khẩu
+          </label>
+          <div className="auth-field__control">
+            <Lock className="auth-field__icon" size={18} strokeWidth={2} aria-hidden />
+            <input
+              id="login-password"
+              type="password"
+              className="form-control auth-field__input"
+              autoComplete="current-password"
+              placeholder="••••••••"
+              value={form.password}
+              onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))}
+              required
+              minLength={6}
+            />
+          </div>
+        </div>
+
+        {error && <div className="auth-shell__error">{error}</div>}
+
+        <button className="btn btn-brand auth-shell__submit w-100" type="submit">
+          Đăng Nhập
+        </button>
+      </form>
+    </AuthLayout>
   );
 }

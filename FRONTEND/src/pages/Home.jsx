@@ -14,12 +14,12 @@ import CustomerPanel from "../components/home/CustomerPanel";
 import KitchenPanel from "../components/home/KitchenPanel";
 import ShipperPanel from "../components/home/ShipperPanel";
 import AdminPanel from "../components/home/AdminPanel";
-import { ShoppingCart, UserRound } from "lucide-react";
+import { Package, ShoppingCart, UserRound } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { ORDER_STATUS_VI } from "../constants/orders";
 
 const FOODS_API_URL = "/foods";
 const CART_KEY = "officeMealCart";
-const STATUS_LABELS = ["Pending", "Preparing", "Ready", "Shipping", "Completed", "Cancelled", "Returned"];
 const normalizeList = (value) => (Array.isArray(value) ? value : []);
 const getUserRole = (user) => String(user?.role ?? user?.Role ?? "").toLowerCase();
 const resolveItemType = (item) => {
@@ -45,10 +45,10 @@ const isAuthzError = (error) => {
   return status === 401 || status === 403;
 };
 const ROLE_META = {
-  customer: { key: "customer", heroClass: "hero-customer", label: "Customer" },
-  kitchenmanager: { key: "kitchen", heroClass: "hero-kitchen", label: "Kitchen" },
-  shipper: { key: "shipper", heroClass: "hero-shipper", label: "Shipper" },
-  admin: { key: "admin", heroClass: "hero-admin", label: "Admin" }
+  customer: { key: "customer", heroClass: "hero-customer", label: "Khách Hàng" },
+  kitchenmanager: { key: "kitchen", heroClass: "hero-kitchen", label: "Quản Lý Bếp" },
+  shipper: { key: "shipper", heroClass: "hero-shipper", label: "Nhân Viên Giao Hàng" },
+  admin: { key: "admin", heroClass: "hero-admin", label: "Quản Trị Viên" }
 };
 
 export default function Home() {
@@ -427,9 +427,14 @@ export default function Home() {
 
   const moveStatus = async (order, nextStatus) => {
     try {
-      const updated = await updateOrderStatus(order.orderId, nextStatus);
+      const oid = order.orderId ?? order.OrderId;
+      const updated = await updateOrderStatus(oid, nextStatus);
+      const uid = updated.orderId ?? updated.OrderId;
       setOrders((current) =>
-        current.map((item) => (item.orderId === updated.orderId ? updated : item))
+        current.map((item) => {
+          const iid = item.orderId ?? item.OrderId;
+          return iid === uid ? updated : item;
+        })
       );
     } catch (error) {
       console.error("Update status failed:", error);
@@ -440,17 +445,19 @@ export default function Home() {
     }
   };
 
-  const toggleFoodAvailability = async (food) => {
-    try {
-      await apiClient.patch(`/foods/${food.id}/availability`, !food.isActive, {
-        headers: { "Content-Type": "application/json" }
-      });
-      setFoods((current) =>
-        current.map((item) => (item.id === food.id ? { ...item, isActive: !item.isActive } : item))
-      );
-    } catch (error) {
-      alert("Không thể cập nhật trạng thái món ăn.");
-    }
+  const batchSetFoodAvailability = async (updates) => {
+    if (!updates.length) return;
+    await Promise.all(
+      updates.map(({ id, isActive }) =>
+        apiClient.patch(`/foods/${id}/availability`, isActive, {
+          headers: { "Content-Type": "application/json" }
+        })
+      )
+    );
+    setFoods((current) => {
+      const map = new Map(updates.map((u) => [u.id, u.isActive]));
+      return current.map((item) => (map.has(item.id) ? { ...item, isActive: map.get(item.id) } : item));
+    });
   };
 
   const safeOrders = normalizeList(orders);
@@ -496,6 +503,14 @@ export default function Home() {
                     title="Hồ Sơ Cá Nhân"
                   >
                     <UserRound size={16} />
+                  </Link>
+                  <Link
+                    className="btn btn-sm btn-light cart-icon-btn"
+                    to="/orders"
+                    aria-label="Đơn hàng"
+                    title="Đơn hàng"
+                  >
+                    <Package size={16} />
                   </Link>
                   <button
                     className="btn btn-sm btn-light cart-icon-btn"
@@ -578,9 +593,9 @@ export default function Home() {
                 user={user}
                 kitchenOrders={kitchenOrders}
                 foods={foods}
-                statusLabels={STATUS_LABELS}
+                statusLabels={ORDER_STATUS_VI}
                 moveStatus={moveStatus}
-                toggleFoodAvailability={toggleFoodAvailability}
+                batchSetFoodAvailability={batchSetFoodAvailability}
               />
             )}
 
@@ -588,7 +603,7 @@ export default function Home() {
               <ShipperPanel
                 user={user}
                 shipperOrders={shipperOrders}
-                statusLabels={STATUS_LABELS}
+                statusLabels={ORDER_STATUS_VI}
                 moveStatus={moveStatus}
               />
             )}

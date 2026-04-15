@@ -134,7 +134,7 @@ export default function CustomerPanel({
                   <div className="card-body d-flex flex-column">
                     <h6 className="fw-semibold mb-1">{food.name}</h6>
                     {!food.isActive && (
-                      <div className="small text-danger fw-semibold mb-1">Tam het mon</div>
+                      <div className="small text-danger fw-semibold mb-1">Tạm hết món</div>
                     )}
                     {food.description && (
                       <div className="small text-muted mb-1">{food.description}</div>
