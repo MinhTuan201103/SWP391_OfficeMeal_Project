@@ -23,3 +23,16 @@ npm-debug.log*
 # --- OS ---
 .DS_Store
 Thumbs.db
+
+
+# Chặn thư mục chứa file build của ASP.NET
+**/wwwroot/dist/
+**/wwwroot/lib/
+
+# Nếu bạn build thẳng vào wwwroot (không qua thư mục con)
+# Hãy cẩn thận chỉ chặn các file build rác:
+**/wwwroot/index-*.js
+**/wwwroot/index-*.css
+**/wwwroot/*.map
+
+
