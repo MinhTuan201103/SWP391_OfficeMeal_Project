@@ -1,5 +1,7 @@
 using System.Data;
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using OfficeMeal.BLL.ViewModels;
 using OfficeMeal.DAL.Data;
 using OfficeMeal.DAL.Models;
@@ -9,20 +11,145 @@ namespace OfficeMeal.BLL.Services;
 public class OrderService : IOrderService
 {
     private readonly OfficeMealContext _dbContext;
+    private readonly IVnPayService _vnPayService;
+    private readonly IConfiguration _configuration;
 
-    public OrderService(OfficeMealContext dbContext)
+    public OrderService(OfficeMealContext dbContext, IVnPayService vnPayService, IConfiguration configuration)
     {
         _dbContext = dbContext;
+        _vnPayService = vnPayService;
+        _configuration = configuration;
+    }
+
+    public async Task<VnPayPaymentResponseViewModel> CreateVnPayOrderAsync(int customerId, CreateOrderViewModel model)
+    {
+        var paymentMethod = (model.PaymentMethod ?? string.Empty).Trim().ToLowerInvariant();
+        if (paymentMethod != "vnpay")
+        {
+            throw new InvalidOperationException("Only vnpay supported for this method.");
+        }
+        if (string.IsNullOrWhiteSpace(model.DeliveryAddress))
+        {
+            throw new InvalidOperationException("Delivery address is required.");
+        }
+        if (model.Items.Count == 0)
+        {
+            throw new InvalidOperationException("Order items cannot be empty.");
+        }
+
+        var customer = await _dbContext.Users.FindAsync(customerId);
+        if (customer == null)
+        {
+            throw new InvalidOperationException("Customer not found.");
+        }
+
+        var foodIds = model.Items.Where(x => x.FoodId.HasValue).Select(x => x.FoodId!.Value).Distinct().ToList();
+        var comboIds = model.Items.Where(x => x.ComboId.HasValue).Select(x => x.ComboId!.Value).Distinct().ToList();
+
+        var foods = await _dbContext.Foods.Where(x => foodIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id);
+        var combos = await _dbContext.Combos
+            .Include(x => x.ComboDetails)
+                .ThenInclude(x => x.Food)
+            .Where(x => comboIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id);
+
+        var details = new List<OrderDetail>();
+        decimal total = 0;
+        foreach (var item in model.Items)
+        {
+            if (item.Quantity <= 0 || (item.FoodId is null && item.ComboId is null))
+            {
+                continue;
+            }
+            if (item.FoodId.HasValue && item.ComboId.HasValue)
+            {
+                continue;
+            }
+
+            decimal unitPrice = 0;
+            if (item.FoodId.HasValue && foods.TryGetValue(item.FoodId.Value, out var food))
+            {
+                if (!food.IsActive)
+                {
+                    continue;
+                }
+                unitPrice = Math.Round(food.Price * (100 - food.DiscountPercent) / 100m, 2);
+            }
+            else if (item.ComboId.HasValue && combos.TryGetValue(item.ComboId.Value, out var combo))
+            {
+                var comboSellable = combo.IsActive && combo.ComboDetails.All(x => x.Food != null && x.Food.IsActive);
+                if (!comboSellable)
+                {
+                    continue;
+                }
+                unitPrice = Math.Round(combo.Price * (100 - combo.DiscountPercent) / 100m, 2);
+            }
+            else
+            {
+                continue;
+            }
+
+            details.Add(new OrderDetail
+            {
+                FoodId = item.FoodId,
+                ComboId = item.ComboId,
+                Quantity = item.Quantity,
+                UnitPrice = unitPrice
+            });
+
+            total += unitPrice * item.Quantity;
+        }
+
+        if (details.Count == 0)
+        {
+            throw new InvalidOperationException("Order has no valid items.");
+        }
+
+        var order = new Order
+        {
+            CustomerId = customerId,
+            OrderDate = DateTime.Now,
+            TotalAmount = total,
+            PaymentMethod = "vnpay",
+            DeliveryAddress = model.DeliveryAddress.Trim(),
+            Note = string.IsNullOrWhiteSpace(model.Note) ? null : model.Note.Trim(),
+            Status = OrderStatus.PendingPayment,
+            OrderDetails = details
+        };
+
+        _dbContext.Orders.Add(order);
+        await _dbContext.SaveChangesAsync();
+
+        var paymentInfo = new PaymentInformationModel
+        {
+            OrderId = order.Id,
+            Amount = total,
+            OrderDescription = $"Thanh toan don hang #{order.Id} - {customer.FullName}",
+            CustomerFullName = customer.FullName,
+            ReturnUrl = _configuration["Vnpay:BackendReturnUrl"],
+            IpnUrl = _configuration["Vnpay:IpnUrl"]
+        };
+
+        var paymentUrl = await _vnPayService.CreatePaymentUrlAsync(paymentInfo);
+
+        return new VnPayPaymentResponseViewModel
+        {
+            PaymentUrl = paymentUrl,
+            OrderId = order.Id,
+            TxnRef = paymentInfo.OrderId.ToString(CultureInfo.InvariantCulture),
+            Amount = total
+        };
     }
 
     public async Task<OrderResponseViewModel> CreateOrderAsync(int customerId, CreateOrderViewModel model)
     {
-        var allowedPayments = new[] { "cash", "momo", "zalopay", "vnpay" };
+        var allowedPayments = new[] { "cash", "momo", "VNPay" };
         var paymentMethod = (model.PaymentMethod ?? string.Empty).Trim();
         if (!allowedPayments.Contains(paymentMethod.ToLowerInvariant()))
         {
-            throw new InvalidOperationException("Unsupported payment method.");
+            throw new InvalidOperationException("Unsupported payment method for this method (use CreateVnPayOrderAsync for vnpay).");
         }
+
         if (string.IsNullOrWhiteSpace(model.DeliveryAddress))
         {
             throw new InvalidOperationException("Delivery address is required.");
@@ -111,6 +238,87 @@ public class OrderService : IOrderService
 
         var created = await QueryOrders().FirstAsync(x => x.OrderId == order.Id);
         return created;
+    }
+
+    public async Task<VnPayConfirmResponseViewModel> ConfirmVnPayPaymentAsync(string queryString)
+    {
+        var response = await _vnPayService.VerifyPaymentAsync(queryString);
+        if (response == null)
+        {
+            return new VnPayConfirmResponseViewModel { Success = false, Message = "Invalid signature or payload." };
+        }
+
+        if (!response.Success)
+        {
+            return new VnPayConfirmResponseViewModel
+            {
+                Success = false,
+                Message = $"VNPay declined (code: {response.ResponseCode})."
+            };
+        }
+
+        if (!int.TryParse(response.TxnRef, NumberStyles.Integer, CultureInfo.InvariantCulture, out var orderId))
+        {
+            return new VnPayConfirmResponseViewModel { Success = false, Message = "Invalid order ID." };
+        }
+
+        var order = await _dbContext.Orders.FirstOrDefaultAsync(x => x.Id == orderId);
+        if (order == null)
+        {
+            return new VnPayConfirmResponseViewModel { Success = false, Message = "Order not found." };
+        }
+
+        var txNote = string.IsNullOrWhiteSpace(response.TransactionNo)
+            ? string.Empty
+            : $"VNPay TX:{response.TransactionNo}";
+
+        if (order.Status == OrderStatus.Pending)
+        {
+            if (!string.IsNullOrEmpty(txNote) && order.Note?.Contains(txNote, StringComparison.Ordinal) == true)
+            {
+                return new VnPayConfirmResponseViewModel
+                {
+                    Success = true,
+                    Message = "Payment already confirmed.",
+                    OrderId = orderId,
+                    TransactionId = response.TransactionNo
+                };
+            }
+        }
+
+        if (order.Status != OrderStatus.PendingPayment)
+        {
+            return new VnPayConfirmResponseViewModel
+            {
+                Success = false,
+                Message = "Order is not awaiting VNPay payment."
+            };
+        }
+
+        if (response.Amount > 0m)
+        {
+            var expected = Math.Round(order.TotalAmount, 2, MidpointRounding.AwayFromZero);
+            var paid = Math.Round(response.Amount, 2, MidpointRounding.AwayFromZero);
+            if (Math.Abs(paid - expected) > 0.01m)
+            {
+                return new VnPayConfirmResponseViewModel { Success = false, Message = "Paid amount does not match order total." };
+            }
+        }
+
+        order.Status = OrderStatus.Pending;
+        order.Note = string.IsNullOrWhiteSpace(order.Note)
+            ? txNote
+            : (string.IsNullOrWhiteSpace(txNote) ? order.Note : $"{order.Note} | {txNote}");
+
+        await _dbContext.SaveChangesAsync();
+
+        return new VnPayConfirmResponseViewModel
+        {
+            Success = true,
+            Message = "Payment confirmed.",
+            OrderId = orderId,
+            TransactionId = response.TransactionNo
+        };
     }
 
     public async Task<IReadOnlyList<OrderResponseViewModel>> GetOrdersAsync(string role, int userId)

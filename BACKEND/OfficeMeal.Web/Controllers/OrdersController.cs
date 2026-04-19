@@ -1,10 +1,13 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Configuration;
 using OfficeMeal.BLL.Services;
 using OfficeMeal.BLL.ViewModels;
 using OfficeMeal.DAL.Data;
+using OfficeMeal.DAL.Models;
 using OfficeMeal.Web.Hubs;
 using System.Security.Claims;
 
@@ -15,15 +18,26 @@ namespace OfficeMeal.Web.Controllers;
 [Authorize]
 public class OrdersController : ControllerBase
 {
+    private static readonly JsonSerializerOptions VnPayIpnJsonOptions = new()
+    {
+        PropertyNamingPolicy = null
+    };
+
     private readonly IOrderService _orderService;
     private readonly IHubContext<OrderHub> _hubContext;
     private readonly OfficeMealContext _dbContext;
+    private readonly IConfiguration _configuration;
 
-    public OrdersController(IOrderService orderService, IHubContext<OrderHub> hubContext, OfficeMealContext dbContext)
+    public OrdersController(
+        IOrderService orderService,
+        IHubContext<OrderHub> hubContext,
+        OfficeMealContext dbContext,
+        IConfiguration configuration)
     {
         _orderService = orderService;
         _hubContext = hubContext;
         _dbContext = dbContext;
+        _configuration = configuration;
     }
 
     [HttpGet]
@@ -64,6 +78,83 @@ public class OrdersController : ControllerBase
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
         var orders = await _orderService.GetOrdersAsync(role, userId);
         return Ok(orders);
+    }
+
+    [HttpPost("vnpay")]
+    [Authorize(Roles = "Customer,Admin")]
+    public async Task<IActionResult> CreateVnPayOrder([FromBody] CreateOrderViewModel model)
+    {
+        var customerId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+        try
+        {
+            var created = await _orderService.CreateVnPayOrderAsync(customerId, model);
+            return Ok(created);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("vnpay-return")]
+    [AllowAnonymous]
+    public async Task<IActionResult> VnPayReturn()
+    {
+        var queryString = Request.QueryString.HasValue
+            ? Request.QueryString.Value!.TrimStart('?')
+            : string.Empty;
+
+        var result = await _orderService.ConfirmVnPayPaymentAsync(queryString);
+
+        if (result.Success)
+        {
+            await _hubContext.Clients.All.SendAsync("UpdateStatus", result.OrderId, (int)OrderStatus.Pending);
+        }
+
+        var redirect = _configuration["Vnpay:PaymentBackReturnUrl"] ?? "/";
+        var tail = $"orderId={result.OrderId}&paid={(result.Success ? "1" : "0")}&msg={Uri.EscapeDataString(result.Message)}";
+        var sep = redirect.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+        return Redirect($"{redirect}{sep}{tail}");
+    }
+
+    [HttpPost("vnpay-ipn")]
+    [AllowAnonymous]
+    public async Task<IActionResult> VnPayIpn()
+    {
+        var queryString = await BuildVnPayQueryStringFromRequestAsync();
+        var result = await _orderService.ConfirmVnPayPaymentAsync(queryString);
+
+        if (result.Success)
+        {
+            await _hubContext.Clients.All.SendAsync("UpdateStatus", result.OrderId, (int)OrderStatus.Pending);
+            var okJson = JsonSerializer.Serialize(new { RspCode = "00", Message = "Successfully" }, VnPayIpnJsonOptions);
+            return Content(okJson, "application/json");
+        }
+
+        var failJson = JsonSerializer.Serialize(new { RspCode = "97", Message = "Confirm failed" }, VnPayIpnJsonOptions);
+        return Content(failJson, "application/json");
+    }
+
+    private async Task<string> BuildVnPayQueryStringFromRequestAsync()
+    {
+        if (Request.HasFormContentType)
+        {
+            var form = await Request.ReadFormAsync();
+            if (form.Count > 0)
+            {
+                return string.Join("&", form.Select(kv =>
+                    $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value.ToString())}"));
+            }
+        }
+
+        if (Request.QueryString.HasValue)
+        {
+            return Request.QueryString.Value!.TrimStart('?');
+        }
+
+        using var reader = new StreamReader(Request.Body);
+        var body = (await reader.ReadToEndAsync()).Trim();
+        return body.TrimStart('?');
     }
 
     [HttpPost]
