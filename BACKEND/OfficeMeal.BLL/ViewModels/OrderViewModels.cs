@@ -71,3 +71,19 @@ public class OrderResponseViewModel
     public string? ShipperPhone { get; set; }
     public List<OrderItemResponseViewModel> Items { get; set; } = new();
 }
+
+public class VnPayPaymentResponseViewModel
+{
+    public string PaymentUrl { get; set; } = string.Empty;
+    public int OrderId { get; set; }
+    public string TxnRef { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
+}
+
+public class VnPayConfirmResponseViewModel
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public int OrderId { get; set; }
+    public string TransactionId { get; set; } = string.Empty;
+}

@@ -83,6 +83,7 @@ builder.Services.AddSignalR();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDailyMenuService, DailyMenuService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IVnPayService, VnPayService>();
 
 var app = builder.Build();
 

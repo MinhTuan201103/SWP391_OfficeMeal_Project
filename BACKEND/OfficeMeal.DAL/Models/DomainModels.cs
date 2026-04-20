@@ -2,13 +2,15 @@ namespace OfficeMeal.DAL.Models;
 
 public enum OrderStatus
 {
-    Pending = 0,
-    Preparing = 1,
-    Ready = 2,
-    Shipping = 3,
-    Completed = 4,
-    Cancelled = 5,
-    Returned = 6
+    PendingPayment = 0,
+    Pending = 1,
+    Preparing = 2,
+    Ready = 3,
+    Shipping = 4,
+    Paid = 5,
+    Completed = 6,
+    Cancelled = 7,
+    Returned = 8
 }
 
 public enum DailyMenuTargetType
